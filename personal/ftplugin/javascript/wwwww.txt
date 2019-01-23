@@ -1,0 +1,7 @@
+\'body':
+XSET $aLink Not supported in HTML5. See CSS :active Selector instead.Sets or returns the color of an active link in a document=aLink
+XSET $background Not supported in HTML5. Use style.backgroundImage instead.    Sets or returns the background image for a document=background
+XSET $bgColor Not supported in HTML5. Use style.backgroundColor instead.    Sets or returns the background color of a document=bgColor
+XSET $link Not supported in HTML5. See CSS :link Selector instead. Sets or returns the color of unvisited links in a document=link
+XSET $text Not supported in HTML5. Use style.color instead.    Sets or returns the color of the text in a document=text
+XSET $vLink Not supported in HTML5. See CSS :visited Selector instead.Sets or returns the color of visited links in a document=vLink 

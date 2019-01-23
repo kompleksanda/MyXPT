@@ -1,0 +1,24 @@
+XPTemplate priority=lang
+
+let s:f = g:XPTfuncs()
+
+fun! s:f.createTable2(...) "{{{
+    let nrow_str = inputdialog("num of row:")
+    let nrow = nrow_str + 0
+
+    let ncol_str = inputdialog("num of column:")
+    let ncol = ncol_str + 0
+
+    let l = ""
+    let i = 0 | while i < nrow | let i += 1
+        let l .= "\t<tr>\n"
+        let j = 0 | while j < ncol | let j += 1
+            let l .= "\t\t<td id=\"`pre^_".i."_".j."\"></td>\n"
+        endwhile
+        let l .= "\t</tr>\n"
+    endwhile
+    return "<table id='`id^'>\n".l."</table>"
+endfunction "}}}
+
+XPT createTable " <table> ... </table>
+`createTable2()^
