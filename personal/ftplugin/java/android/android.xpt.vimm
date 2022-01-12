@@ -1,0 +1,1142 @@
+XPTemplate priority=sub
+let s:f = g:XPTfuncs()
+let s:f.AndroidTemplatesDict = {
+\"PERMISSION"  :
+\   { "DECLARING/ENFORCING" :
+\     { "Declare a custom permission"   :  "$permission_custom",
+\       "Enforce a custom permission"   :  "$permission_enforce"
+\     },
+\     "To use GPS functionality"        : "<uses-permission android:name=\"android.permission.ACCESS_GPS\"></uses-permission>\n<uses-permission android:name=\"android.permission.ACCESS_LOCATION\"></uses-permission>",
+\   },
+\ "TELEPHONY"  :
+\   {"MAKE IT REQUIRED HARDWARE FEATURE":"<uses-feature android:name=\"android.hardware.telephony\"\n\t\tandroid:required=\"true\"/>",
+\   "Check for device support"          :  "$telephony_devSupport",
+\   "Initiate phone call"               :  "$telephony_initCall",
+\   "replace native dialer"             :  "$telephony_nativeDialer",
+\   "TELPHONY PROP/PHONE STATE"   :
+\      {"Read phone device details"    : "$telephony_propDevDetails",
+\       "Read network details"         : "$telephony_propNetDetails",
+\       "Read sim details"             : "$telephony_propSimDetails",
+\       "Read conn & transfer state details":"$telephony_propConn"
+\      }
+\   },
+\  "BLUETOOTH"  :
+\       {"Read details/state"          : "$bluetooth_propDetails",
+\        "Enabling bluetooth"          : "$bluetooth_enable",
+\        "DISCOVERY"    :
+\           {"Make device discoverable": "startActivityForResult\\(new Intent\\(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE), DISCOVERY_REQUEST);",
+\            "Monitor discoverable request approval" : "$bluetooth_monDiscReq",
+\            "Initiate Discovery process" : "{$bluetooth_prop}if (bluetooth.isEnabled\\())\n\tif (!bluetooth.isDiscovering\\()){ bluetooth.startDiscovery\\();}",
+\           "Monitor changes in discovery process" : "$bluetooth_monDisc",
+\            "Get Discoverd Devices in a list" : "$bluetooth_getDisc"
+\           }
+\       },
+\ "AUDIO"   :
+\    {"initialize audio for playback" : "$audio_initAudio"
+\    },     
+\ "VIDEO"   :
+\    {"Video playback using VideoView" : "$video_pbVV"
+\    },     
+\ "LAYOUT"   :
+\    {"LINEAR LAYOUT"                  :
+\       {"XML code"           :    "$layout_lin",
+\        "Java Code"          :    "$layout_lin_code",
+\       },
+\     "Main.xml TEMPLATE"              : "$mainxml",
+\     "Relative Layout"                : "$layout_rel",
+\     "Grid Layout"                    : "$grid_layout",
+\     "merge tag"                          : "<merge xmlns:android=\"http://schemas.android.com/apk/res/android\">\n`cursor^\n</merge>",
+\     "include tag"               :    "<include android:id=\"@+id/my_action_bar\" layout=\"@layout/actionbar\"/>"
+\    },     
+\ "WIDGET AND VIEW"   :
+\    {"Get View Object in code"      : "//import android.widget.`View^;\n``View^ my`View^ = (`View^)findViewById\\(R.id.`ViewID^);",
+\	  "TEXT"                  : 
+\        {"TEXT"          :
+\           {"text"           : "$view_text",
+\             "FUNCTIONS"      : ['setText\(`str^)'],
+\           },
+\         "AutoComplete Text"        : "$view_auto_text",
+\        },
+\     "Image"                 : "$view_image",
+\     "BUTTON"                :
+\        {"Create XML code"   :  "$wid_button",
+\         "Set onclickListener in code" : "$wid_button_socl",
+\         "FUNCTIONS"         :  ["getHeight\\()","setHeight\\(`30^)","setTextColor\\(`Color.RED^)"],
+\        },
+\     "EDIT TEXT"        :
+\        {"Edit Text XML"     : "$wid_edit_text",
+\         "FUNCTIONS": ['getText\()',"options","getHeight\\()","setHeight\\(`30^)"],
+\        },
+\     "CheckBox"              : "$wid_checkbox",
+\     "RADIO GROUP"      :
+\        {"Radio Group"     : "$wid_radio_group",
+\         "FUNCTIONS"       : ["isEnabled\\()", "setEnabled\\(`false/true^)"],
+\        },
+\     "Spinner"          : "$wid_spin",
+\     "MAP"              : 
+\       {"map"           :     "$wid_map",
+\        "FUNCTIONS"     :  ["getZoomLevel\\()"],
+\       },
+\     "STUB"             :
+\       {"find and make stub visible"   : "View stub = findViewById(R.id. download_progress_panel_stub);\nstub.setVisibility(View.VISIBLE);\nView downloadProgressPanel = findViewById(R.id.download_progress_panel);",
+\        "Create a stub view xml code"  : "$stub_view",
+\       },
+\    },     
+\ "MANIFEST"   :
+\    {"Sample Manifest"                  : "$manifest"
+\    },
+\ "ACTIVITY"   :
+\	 {"SImple Activity"              :"$activity_simple",
+\     "Activity main.xml"            :"$activity_xml",
+\     "onConfigurationChanged Override" : "$activity_onconfchange",
+\	 },
+\ "OPTIONS MENU" :
+\    {"Activity Code"                :"$options_menu",
+\     "Activity Code that handle onselect on menu items" : "$option_item_select",
+\    },
+\ "GPS AND LOCATION" :
+\    {"Get Coordinates": "$gps_get_coordinates",
+\     "show location in Google map"  : "$show_map_location",
+\     "Map zoom in snippet" :  "public void ZoomIn\\(MapView mv, MapController mc){\n
+\	if\\(mv.getZoomLevel\\()!=21){\n
+\		mc.zoomTo\\(mv.getZoomLevel\\()+ 1);\n
+\	}\n
+\}",
+\     "Map zoom out snippet" :  "public void ZoomOut\\(MapView mv, MapController mc){\n
+\	if (mv.getZoomLevel\\()!=1){\n
+\		mc.zoomTo\\(mv.getZoomLevel\\() - 1);\n
+\	}\n
+\}",
+\     "Toggle between map and satellie view snippet" : "public void ShowMap\\(MapView mv){\n
+\	if (mv.isSatellite\\()){ //OR !mv.isSatellite\n 
+\		mv.toggleSatellite\\();\n
+\	}\n
+\}",
+\    },
+\ "STRING.XML"                     :
+\     {"Sting.xml sample"                     :    "$string_xml",
+\      "Plurals"                              :    "$string_plural",
+\      "color"                                :    "<color name=\"app_background\">#FF0000FF</color>",
+\      "Dimension"                            :    "<dimen name=\"default_border\">5px</dimen>",
+\      "String Array"                         :    "$string_string_arr",
+\      "Array"                                :    "$string_arr",
+\      "Define style"                         :    "$string_style",
+\     },
+\ "CONTENT PROVIDERS"       :
+\     {"CREATE CUSTOM PROVIDERS"         :
+\         {"Step 1: Implement BaseColumns to represent one unit of your content, use should do this in a different package and must occupy a file of its own":"$content_custom1",
+\          "Step 2: Now create the Custom Provider for your package"   : "$content_custom2",
+\          "Step 3: Create Provider tag in Manifest"                   : "$providers_samp",
+\         },
+\     },
+\ "ANIMATORS"               :
+\     {"Animator that Changes the opacity"   : "$anim_opac",
+\      "example shows an animation set that spins the target 360 degrees while it shrinks and fades out" : "$anim_sh_fd",
+\     },
+\ "RESOURCES"               :
+\     {"Step 1: get the resources in variables" : 'Resources myResources = getResources\();',
+\      "Get string" : 'CharSequence styledText = myResources.getText\(R.string.`stop_message^);',
+\      "Get Drawable"  :   'Drawable icon = myResources.getDrawable\(R.drawable.`app_icon^);',
+\      "Get Color"     :    'int opaqueBlue = myResources.getColor\(R.color.`opaque_blue^);',
+\      "Get dimension" :    'float borderWidth = myResources.getDimension\(R.dimen.`standard_border^);',
+\      "Get Animation" :   'Animation tranOut = AnimationUtils.loadAnimation\(this, R.anim.`spin_shrink_fade^);',
+\      "Get ObjectAnimator" : 'ObjectAnimator animator = (ObjectAnimator)AnimatorInflater.loadAnimator\(this, R.anim.`my_animator^);',
+\      "Get String Array"   : 'String[] stringArray = myResources.getStringArray\(R.array.`string_array^);',
+\      "Get Int Array"      : 'int[] intArray = myResources.getIntArray\(R.array.`integer_array^);',
+\      "Get Frame by Frame animated resource":'AnimationDrawable androidAnimation = (AnimationDrawable)myResources.getDrawable\(R.drawable.`frame_by_frame^);',
+\     },
+\ "APPLICATION"            :
+\    {"Application java code"       :        "$application_java_c",
+\     "Application Manifest Code"   :        "$application_mani",
+\    },
+\}
+
+XPT template
+XSETm $stub_view
+<ViewStub
+	android:id="@+id/download_progress_panel_stub"
+	android:layout="@layout/progress_overlay_panel"
+	android:inflatedId="@+id/download_progress_panel"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:layout_gravity="bottom"
+/>
+XSETm END
+XSETm $grid_layout
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	`$androidlayout^ >
+</GridLayout>
+XSETm END
+XSETm $layout_lin_code
+LinearLayout ll = new LinearLayout(this);
+ll.setOrientation(LinearLayout.VERTICAL);
+int lHeight = LinearLayout.LayoutParams.MATCH_PARENT;
+int lWidth = LinearLayout.LayoutParams.WRAP_CONTENT;
+ll.addView(`myXView^, new LinearLayout.LayoutParams(lHeight, lWidth));
+
+setContentView(ll);
+XSETm END
+XSETm $application_mani
+<application android:icon="@drawable/icon"
+	android:name=".MyApplication">
+	[... Manifest nodes ...]
+</application>
+XSETm END
+XSETm $application_java_c
+import android.app.Application;
+import android.content.res.Configuration;
+
+public class MyApplication extends Application {
+	private static MyApplication singleton;
+	// Returns the application instance
+	public static MyApplication getInstance() {
+		return singleton;
+	}
+
+	@Override
+	public final void onCreate() {
+		super.onCreate();
+		singleton = this;
+	}
+	@Override
+	public final void onLowMemory() {
+		super.onLowMemory();
+	}
+	@Override
+	public final void onTrimMemory(int level) {
+		super.onTrimMemory(level);
+	}
+	@Override
+	public final void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+	}
+}
+XSETm END
+XSETm $activity_onconfchange
+@Override
+public void onConfigurationChanged(Configuration newConfig) {
+	super.onConfigurationChanged(newConfig);
+	// [ ... Update any UI based on resource values ... ]
+	if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+		// [ ... React to different orientation ... ]
+	}
+	if (newConfig.keyboardHidden == Configuration.KEYBOARDHIDDEN_NO) {
+		// [ ... React to changed keyboard visibility ... ]
+	}
+}
+XSETm $activity_xml
+<activity
+    android:label="@string/app_name"
+    android:theme="@android:style/Theme.Holo.Light"
+    android:name=".MainActivity"
+	`configChanges...{{^`$manifest_conf_changes^`}}^>
+    <intent-filter >
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+    </intent-filter>
+</activity>
+XSETm END
+XSETm $manifest_conf_changes
+android:configChanges="screenSize|orientation|keyboardHidden"
+XSETm END
+XSETm $anim_sh_fd
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+	android:interpolator="@android:anim/accelerate_interpolator">
+	<rotate
+		android:fromDegrees="0"
+		android:toDegrees="360"
+		android:pivotX="50%"
+		android:pivotY="50%"
+		android:startOffset="500"
+		android:duration="1000" />
+	<scale
+		android:fromXScale="1.0"
+		android:toXScale="0.0"
+		android:fromYScale="1.0"
+		android:toYScale="0.0"
+		android:pivotX="50%"
+		android:pivotY="50%"
+		android:startOffset="500"
+		android:duration="500" />
+	<alpha
+		android:fromAlpha="1.0"
+		android:toAlpha="0.0"
+		android:startOffset="500"
+		android:duration="500" />
+</set>
+XSETm END
+XSETm $anim_opac
+<objectAnimator xmlns:android="http://schemas.android.com/apk/res/android"
+	android:propertyName="alpha"
+	android:duration="1000"
+	android:valueFrom="0.0"
+	android:valueTo="1.0"
+/>
+XSETm END
+XSETm $string_style
+<style name="base_text"` `INHERITS ANOTHER STYLE?...{{^ parent="`base_text^"`}}^>
+	<item name="android:textSize">14sp</item>
+	<item name="android:textColor">#111</item>
+</style>
+XSETm END
+XSETm $string_arr
+<array name=“integer_array“>
+	<item>3</item>
+	<item>2</item>
+	<item>1</item>
+</array>
+XSETm END
+XSETm $string_string_arr
+<string-array name="string_array">
+	<item>Item 1</item>
+	<item>Item 2</item>
+	<item>Item 3</item>
+</string-array>
+XSETm END
+XSET content.pre=content
+XSETm $permission_custom
+<permission
+	android:name="com.paad.DETONATE_DEVICE"
+	android:protectionLevel="dangerous"
+	android:label="Self Destruct"
+	android:description="@string/detonate_description">
+</permission>
+XSETm END
+XSETm $permission_enforce
+<`tag^ChooseStr("activity","service","receiver")^>
+	`content^X('
+	if xfunc.R\("tag") == "activity"
+		return ''android:name=".MyActivity"
+android:label="@string/app_name"
+android:permission="com.paad.DETONATE_DEVICE">''
+	elseif xfunc.R\("tag") == "service"
+		return ''android:name=".MyService"
+android:permission="com.paad.DETONATE_DEVICE">''
+	elseif xfunc.R\("tag") == "receiver"
+		return ''android:name=".MyReceiver"
+android:permission="com.paad.DETONATE_DEVICE">
+<intent-filter>
+	<action android:name="com.paad.ACTION_DETONATE_DEVICE"/>
+</intent-filter>''
+	else
+		return ""
+	endif')^
+</`tag^>
+XSETm END
+XSETm $telephony_devSupport
+PackageManager pm = getPackageManager();
+boolean telephonySupported = pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
+boolean gsmSupported = pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CDMA);
+boolean cdmaSupported = pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_GSM);
+XSETm END
+XSETm $telephony_initCall
+//To use this action, your application must request the CALL_PHONE uses-permission:
+//import android.content.Intent;
+//import android.net.Uri;
+//<uses-permission android:name="android.permission.CALL_PHONE"/>
+Intent whoyougonnacall = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:555-2368"));
+whoyougonnacall.setLaunchFlags(Intent.NEW_TASK_LAUNCH );
+startActivity(whoyougonnacall);
+XSETm END
+XSETm $telephony_nativeDialer
+<activity
+	android:name=".MyDialerActivity"
+	android:label="@string/app_name">
+	<intent-filter>
+		<action android:name="android.intent.action.CALL_BUTTON" />
+		<category android:name="android.intent.category.DEFAULT" />
+	</intent-filter>
+	<intent-filter>
+		<action android:name="android.intent.action.VIEW" />
+		<action android:name="android.intent.action.DIAL" />
+		<category android:name="android.intent.category.DEFAULT" />
+		<category android:name="android.intent.category.BROWSABLE" />
+		<data android:scheme="tel" />
+	</intent-filter>
+</activity>
+XSETm END
+XSETm $telephony_prop
+String srvcName = Context.TELEPHONY_SERVICE;
+TelephonyManager telephonyManager =(TelephonyManager)getSystemService(srvcName);
+
+
+XSETm END
+XSETm $telephony_propDevDetails+$telephony_prop
+String phoneTypeStr = "unknown";
+int phoneType = telephonyManager.getPhoneType();
+switch (phoneType) {
+	case (TelephonyManager.PHONE_TYPE_CDMA):
+		phoneTypeStr = "CDMA";
+		break;
+	case (TelephonyManager.PHONE_TYPE_GSM) :
+		phoneTypeStr = "GSM";
+		break;
+	case (TelephonyManager.PHONE_TYPE_SIP):
+		phoneTypeStr = "SIP";
+		break;
+	case (TelephonyManager.PHONE_TYPE_NONE):
+		phoneTypeStr = "None";
+		break;
+	default: break;
+}
+// -- These require READ_PHONE_STATE uses-permission --
+//<uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+// Read the IMEI for GSM or MEID for CDMA
+String deviceId = telephonyManager.getDeviceId();
+// Read the software version on the phone (note -- not the SDK version)
+String softwareVersion = telephonyManager.getDeviceSoftwareVersion();
+// Get the phone’s number (if available)
+String phoneNumber = telephonyManager.getLine1Number();
+XSETm END
+XSETm $telephony_propNetDetails+$telephony_prop
+// Get connected network country ISO code
+String networkCountry = telephonyManager.getNetworkCountryIso();
+// Get the connected network operator ID (MCC + MNC)
+String networkOperatorId = telephonyManager.getNetworkOperator();
+// Get the connected network operator name
+String networkName = telephonyManager.getNetworkOperatorName();
+// Get the type of network you are connected to
+int networkType = telephonyManager.getNetworkType();
+switch (networkType) {
+	//code
+}
+XSETm END
+XSETm $telephony_propSimDetails+$telephony_prop
+int simState = telephonyManager.getSimState();
+switch (simState) {
+	case (TelephonyManager.SIM_STATE_ABSENT): break;
+	case (TelephonyManager.SIM_STATE_NETWORK_LOCKED): break;
+	case (TelephonyManager.SIM_STATE_PIN_REQUIRED): break;
+	case (TelephonyManager.SIM_STATE_PUK_REQUIRED): break;
+	case (TelephonyManager.SIM_STATE_UNKNOWN): break;
+	case (TelephonyManager.SIM_STATE_READY): {
+	// Get the SIM country ISO code
+	String simCountry = telephonyManager.getSimCountryIso();
+	// Get the operator code of the active SIM (MCC + MNC)
+	String simOperatorCode = telephonyManager.getSimOperator();
+	// Get the name of the SIM operator
+	String simOperatorName = telephonyManager.getSimOperatorName();
+	// -- Requires READ_PHONE_STATE uses-permission --
+	// Get the SIM’s serial number
+	String simSerial = telephonyManager.getSimSerialNumber();
+	break;
+	}
+	default: break;
+}
+XSETm END
+XSETm $telephony_propConn+$telephony_prop
+int dataActivity = telephonyManager.getDataActivity();
+int dataState = telephonyManager.getDataState();
+switch (dataActivity) {
+	case TelephonyManager.DATA_ACTIVITY_IN : break;
+	case TelephonyManager.DATA_ACTIVITY_OUT : break;
+	case TelephonyManager.DATA_ACTIVITY_INOUT : break;
+	case TelephonyManager.DATA_ACTIVITY_NONE : break;
+}
+switch (dataState) {
+	case TelephonyManager.DATA_CONNECTED : break;
+	case TelephonyManager.DATA_CONNECTING : break;
+	case TelephonyManager.DATA_DISCONNECTED : break;
+	case TelephonyManager.DATA_SUSPENDED : break;
+}
+XSETm END
+XSETm $bluetooth_prop
+BluetoothAdapter bluetooth = BluetoothAdapter.getDefaultAdapter();
+//To read any of the local Bluetooth Adapter properties, initiate discovery, or fi nd bonded devices, you
+//need to include the BLUETOOTH permission in your application manifest
+//<uses-permission android:name="android.permission.BLUETOOTH"/>
+//<uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+
+
+XSETm END
+XSETm $bluetooth_propDetails+$bluetooth_prop
+if (bluetooth.isEnabled()) {
+	String address = bluetooth.getAddress();
+	String name = bluetooth.getName();
+	//If you have the BLUETOOTH_ADMIN permission, you can change the friendly name of the Bluetooth
+	//Adapter using the setName method:
+	bluetooth.setName("Blackfang");
+	//To find a more detailed description of the current Bluetooth Adapter state, use the getState
+	//method, which will return one of the following BluetoothAdapter constants:
+	//‰ STATE_TURNING_ON
+	//‰ STATE_ON
+	//‰ STATE_TURNING_OFF
+	//‰ STATE_OFF
+}
+XSETm END
+XSETm $bluetooth_enable
+`content^X('
+let opt = tlib#input#List\("si","",["By Querying Bluetooth Adapter","By Using BroadCast Reciever that monitors Bluetooth State change"])
+if opt == 1
+	return xfunc.GetVar\("$bluetooth_prop") . "private static final int ENABLE_BLUETOOTH = 1;
+private void initBluetooth() {
+	if (!bluetooth.isEnabled()) {
+		// Bluetooth isn’t enabled, prompt the user to turn it on.
+		Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+		startActivityForResult(intent, ENABLE_BLUETOOTH);
+	} else {
+		// Bluetooth is enabled, initialize the UI.
+		initBluetoothUI();
+	}
+}
+protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+	if (requestCode == ENABLE_BLUETOOTH)
+		if (resultCode == RESULT_OK) {
+		// Bluetooth has been enabled, initialize the UI.
+		initBluetoothUI();
+		}
+	}
+}"
+elseif opt == 2
+	return ''BroadcastReceiver bluetoothState = new BroadcastReceiver() {
+	@Override
+	public void onReceive(Context context, Intent intent) {
+		String prevStateExtra = BluetoothAdapter.EXTRA_PREVIOUS_STATE;
+		String stateExtra = BluetoothAdapter.EXTRA_STATE;
+		int state = intent.getIntExtra(stateExtra, −1);
+		int previousState = intent.getIntExtra(prevStateExtra, −1);
+		String tt = "";
+		switch (state) {
+			case (BluetoothAdapter.STATE_TURNING_ON) :
+				tt = "Bluetooth turning on"; break;
+			case (BluetoothAdapter.STATE_ON) :
+				tt = "Bluetooth on"; break;
+			case (BluetoothAdapter.STATE_TURNING_OFF) :
+				tt = "Bluetooth turning off"; break;
+			case (BluetoothAdapter.STATE_OFF) :
+				tt = "Bluetooth off"; break;
+			default: break;
+		}
+		Log.d(TAG, tt);
+	}
+};
+String actionStateChanged = BluetoothAdapter.ACTION_STATE_CHANGED;
+registerReceiver(bluetoothState, new IntentFilter(actionStateChanged));''
+else
+	return ""
+endif
+')^
+XSETm END
+XSETm $bluetooth_monDiscReq
+`content^X('
+let opt = tlib#input#List\("si","", ["By Overridding onActivityResult()","By Using BroadCast receiver over intent"])
+if opt == 1
+	return ''@Override
+protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+	if (requestCode == DISCOVERY_REQUEST) {
+		if (resultCode == RESULT_CANCELED) {
+			Log.d(TAG, "Discovery canceled by user");
+		}
+	}
+}''
+elseif opt == 2
+	return ''registerReceiver(new BroadcastReceiver() {
+	@Override
+	public void onReceive(Context context, Intent intent) {
+		String prevScanMode = BluetoothAdapter.EXTRA_PREVIOUS_SCAN_MODE;
+		String scanMode = BluetoothAdapter.EXTRA_SCAN_MODE;
+		int currentScanMode = intent.getIntExtra(scanMode, −1);
+		int prevMode = intent.getIntExtra(prevScanMode, −1);
+		Log.d(TAG, "Scan Mode: " + currentScanMode + ". Previous: " + prevMode);
+		}
+	}, new IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED));''
+else
+	return ""
+endif')^
+XSETm END
+XSETm $bluetooth_monDisc
+BroadcastReceiver discoveryMonitor = new BroadcastReceiver() {
+	String dStarted = BluetoothAdapter.ACTION_DISCOVERY_STARTED;
+	String dFinished = BluetoothAdapter.ACTION_DISCOVERY_FINISHED;
+	@Override
+	public void onReceive(Context context, Intent intent) {
+		if (dStarted.equals(intent.getAction())) {
+			// Discovery has started.
+			Log.d(TAG, "Discovery Started...");
+		}
+		else if (dFinished.equals(intent.getAction())) {
+			// Discovery has completed.
+			Log.d(TAG, "Discovery Complete.");
+		}
+	}
+	};
+registerReceiver(discoveryMonitor, new IntentFilter(dStarted));
+registerReceiver(discoveryMonitor, new IntentFilter(dFinished));
+XSETm END
+XSETm $bluetooth_getDisc
+private ArrayList<BluetoothDevice> deviceList = new ArrayList<BluetoothDevice>();
+private void startDiscovery() {
+	registerReceiver(discoveryResult, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+	if (bluetooth.isEnabled() && !bluetooth.isDiscovering()){
+	deviceList.clear();
+	bluetooth.startDiscovery();
+}
+BroadcastReceiver discoveryResult = new BroadcastReceiver() {
+	@Override
+	public void onReceive(Context context, Intent intent) {
+		String remoteDeviceName = intent.getStringExtra(BluetoothDevice.EXTRA_NAME);
+		BluetoothDevice remoteDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+		deviceList.add(remoteDevice);
+		Log.d(TAG, "Discovered " + remoteDeviceName);
+	}
+};
+XSETm END
+XSETm $audio_initAudio
+`content^X('
+let opt = tlib#input#List\("si", "", ["Audio from package resource","Audio from local file","Audio from online resource","Audio from Content Provider","initialize audio using MediaPlayer"])
+if opt == 1
+	return "MediaPlayer resourcePlayer = MediaPlayer.create(this, R.raw.my_audio);"
+elseif opt == 2
+	return ''MediaPlayer filePlayer = MediaPlayer.create(this, Uri.parse("file:///sdcard/localfile.mp3"));''
+elseif opt == 3
+	return ''MediaPlayer urlPlayer = MediaPlayer.create(this, Uri.parse("http://site.com/audio/audio.mp3"));''
+elseif opt == 4
+	return "MediaPlayer contentPlayer = MediaPlayer.create(this, Settings.System.DEFAULT_RINGTONE_URI);"
+elseif opt == 5
+	return ''MediaPlayer mediaPlayer = new MediaPlayer();
+mediaPlayer.setDataSource("/sdcard/mydopetunes.mp3");
+mediaPlayer.prepare();''
+else
+	return ""
+endif
+')^
+XSETm END
+XSETm $video_pbVV
+// Get a reference to the Video View.
+final VideoView videoView = (VideoView)findViewById(R.id.videoView);
+// Configure the video view and assign a source video.
+videoView.setKeepScreenOn(true);
+videoView.setVideoPath("/sdcard/mycatvideo.3gp");
+// Attach a Media Controller
+MediaController mediaController = new MediaController(this);
+videoView.setMediaController(mediaController);
+XSETm END
+XSET orientation=ChooseStr("vertical", "horizontal")
+XSETm $layout_lin
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="`orientation^"
+	android:gravity="center"
+	`$androidlayout^
+	`cursor^
+</LinearLayout>
+XSETm END
+XSET layout_width=ChooseStr("fill_parent","wrap_content","match_parent")
+XSET layout_height=ChooseStr("fill_parent","wrap_content","match_parent")
+XSETm $view_text
+`content^X('
+let opt = tlib#input#List\("si", "", ["XML Code","Build it in code"])
+if opt == 1
+	return ''<TextView
+	android:id="@+id/myTextView"
+	\`\$androidlayout\^
+	android:textSize="30sp"
+	android:text="@string/hello"
+	\`cursor\^
+/>''
+elseif opt == 2
+	return ''import android.widget.TextView;
+TextView HelloWorldTextView = new TextView(this);
+HelloWorldTextView.setText("Hello World!");
+setContentView(HelloWorldTextView);
+''
+else
+	return ""
+endif
+')^
+XSETm END
+XSETm $view_image
+`content^X('
+let opt = tlib#input#List\("si", "", ["XML Code","Build it in code"])
+if opt == 1
+	return ''<ImageView android:id="@+id/\`imageview\^"
+	\`\$androidlayout\^
+	android:src="@drawable/\`helloworld\^"
+	\`cursor\^
+/>''
+elseif opt == 2
+	return ''\\import android.widget.ImageView;
+TextView HelloWorldImageView = new ImageView(this);
+HelloWorldImageView.setImageResource(R.drawable.\`helloworld\^);
+setContentView(HelloWorldImageView);
+''
+else
+	return ""
+endif
+')^
+XSETm END
+XSETm $manifest
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="`com.aide.trainer.myapp^"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-sdk 
+        android:minSdkVersion="11" 
+        android:targetSdkVersion="17" />
+
+    <application
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name" >
+		//Providers goes here
+        `$activity_xml^
+    </application>
+	//permissions should go here
+</manifest>
+XSETm END
+XSETm $mainxml
+<?xml version="1.0" encoding="utf-8"?>
+`cursor^
+XSETm END
+XSETm $activity_simple
+package android_programmers_guide.HelloWorldText;
+
+import android.app.Activity;
+import android.os.Bundle;
+
+public class HelloWorldText extends Activity {
+
+	// Called at the start of the full lifetime.
+	@Override
+	public void onCreate(Bundle icicle) {
+		super.onCreate(icicle);
+
+		// Initialize Activity and inflate the UI.
+		setContentView(R.layout.main);
+	}
+
+	// Called after onCreate has finished, use to restore UI state
+	@Override
+	public void onRestoreInstanceState(Bundle savedInstanceState) {
+		super.onRestoreInstanceState(savedInstanceState);
+		// Restore UI state from the savedInstanceState.
+		// This bundle has also been passed to onCreate.
+		// Will only be called if the Activity has been
+		// killed by the system since it was last visible.
+	}
+
+	// Called before subsequent visible lifetimes for an Activity process.
+	@Override
+	public void onRestart(){
+		super.onRestart();
+		// Load changes knowing that the Activity has already
+		// been visible within this process.
+	}
+
+	// Called at the start of the visible lifetime.
+	@Override
+	public void onStart(){
+		super.onStart();
+		// Apply any required UI change now that the Activity is visible.
+	}
+
+	// Called at the start of the active lifetime.
+	@Override
+	public void onResume(){
+		super.onResume();
+		// Resume any paused UI updates, threads, or processes required
+		// by the Activity but suspended when it was inactive.
+	}
+
+	// Called to save UI state changes at the end of the active lifecycle.
+	@Override
+	public void onSaveInstanceState(Bundle savedInstanceState) {
+		// Save UI state changes to the savedInstanceState.
+		// This bundle will be passed to onCreate and
+		// onRestoreInstanceState if the process is
+		// killed and restarted by the run time.
+		super.onSaveInstanceState(savedInstanceState);
+	}
+
+	// Called at the end of the active lifetime.
+	@Override
+	public void onPause(){
+		// Suspend UI updates, threads, or CPU intensive processes
+		// that don’t need to be updated when the Activity isn’t
+		// the active foreground Activity.
+		super.onPause();
+	}
+
+	// Called at the end of the visible lifetime.
+	@Override
+	public void onStop(){
+		// Suspend remaining UI updates, threads, or processing
+		// that aren’t required when the Activity isn’t visible.
+		// Persist all edits or state changes
+		// as after this call the process is likely to be killed.
+		super.onStop();
+	}
+
+	// Sometimes called at the end of the full lifetime.
+	@Override
+	public void onDestroy(){
+		// Clean up any resources including ending threads,
+		// closing database connections etc.
+		super.onDestroy();
+	}
+}
+XSETm END
+XSETm $wid_button
+<Button android:id="@+id/`callButton^"
+	`$androidlayout^
+	//style="?android:attr/buttonStyleSmall"
+	android:text="Show Dialer" />
+XSETm END
+XSETm $wid_button_socl
+`callButton^.setOnClickListener(new Button.OnClickListener() {
+	public void onClick(View v){
+		`cursor^
+	}
+});
+XSETm END
+XSETm $wid_edit_text
+<EditText android:id="@+id/`phoneNumber^"
+	`androidlayout^
+	android:maxLines="1"
+	android:layout_marginTop="2dip"
+	android:ems="25"
+ 	android:autoText="true"
+	android:capitalize="sentences"
+	android:scrollHorizontally="true" />
+/>
+XSETm END
+XSETm $options_menu
+//import android.view.Menu;
+@Override
+public boolean onCreateOptionsMenu(Menu menu) {
+	super.onCreateOptionsMenu(menu);
+	menu.add(0, 0, "AutoComplete");
+	menu.add(0, 1, "Button");
+	menu.add(0, 2, "CheckBox");
+	menu.add(0, 3, "EditText");
+	menu.add(0, 4, "RadioGroup");
+	menu.add(0, 5, "Spinner");
+	return true;
+}
+XSETm END
+XSETm $option_item_select
+@Override
+public boolean onOptionsItemSelected(Menu.Item item){
+	/** Select statement to handle calls to specific menu items */
+	switch (item.getId()) {
+		case 0:
+			//Intent showButton = new Intent(this, testButton.class);
+			//startActivity(showButton);
+			return true;
+		case 1:
+			return true;
+		case 2:
+			return true;
+		case 3:
+			return true;
+		case 4:
+			return true;
+		case 5:
+			return true;
+	}
+	return true;
+}
+XSETm END
+XSETm $view_auto_text
+<AutoCompleteTextView android:id="@+id/`testAutoComplete^"
+	`$androidlayout^/>
+XSETm END
+XSETm $wid_checkbox
+<CheckBox android:id="@+id/`testCheckBox^"
+	`$androidlayout^
+	android:text="This is the test CheckBox"/>
+XSETm END
+XSETm $wid_edit_text
+<EditText android:id="@+id/testEditText"
+	`$androidlayout^
+/>
+XSETm END
+XSETm $wid_radio_group
+<RadioGroup android:id="@+id/testRadioGroup"
+	`$androidlayout^ >
+	<RadioButton
+		android:text="Radio 1"
+		android:id="@+id/`radio1^"/>
+	`Radio...^<RadioButton
+	android:text="Radio 1"
+	android:id="@+id/`radio1^"/>
+`Radio...^
+<RadioButton
+android:text="Radio 2"
+android:id="@+id/radio2" />
+</RadioGroup>
+XSETm END
+XSETm $wid_spin
+<Spinner android:id="@+id/testSpinner"
+	`$androidlayout^
+/>
+XSETm END
+XSETm $gps_get_coordinates
+//import android.location.LocationManager;
+//import android.content.Context;
+LocationManager myManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+Double latPoint = myManager.getCurrentLocation("gps").getLatitude();
+Double lngPoint = myManager.getCurrentLocation("gps").getLongitude();
+XSETm END
+XSET layout_gravity=ChooseStr("right","fill","fill_horizontal")
+XSETm $androidlayout
+android:layout_width="`layout_width^"
+android:layout_height="`layout_height^"
+//android:layout_gravity="`layout_gravity^" //used in grid_layout
+//android:layout_weight="1"
+`ALIGNMENT FOR RelativeLayout Elements...{{^`Echo("\n")`$androidalign^`}}^
+`PADDING...{{^`Echo("\n")`$androidpadding^`}}^
+XSETm END
+XSETm $androidalign
+//android:layout_alignParentRight="true"
+//android:layout_alignParentBottom="true"
+//android:layout_alignParentLeft="true"
+//android:layout_alignParentRight="true"
+//android:layout_alignBottom="@+id/myMap" //use to align other RelativeLayout elements inside a given element
+//android:layout_alignRight="@+id/myMap"  //same
+//android:layout_above="@id/button_bar"
+XSETm END
+XSETm $wid_map
+<view class="com.google.android.maps.MapView"
+	android:id="@+id/myMap"
+	`$androidlayout^/>
+XSETm END
+XSETm $show_map_location
+//to embed mapview in this activity define class to extend MapActivity instead of Activity "public class <theClass> extends MapActivity {...}"
+//import com.google.android.maps.MapActivity;
+//import com.google.android.maps.MapView;
+//import com.google.android.maps.Point;
+//import com.google.android.maps.MapController;
+
+MapView myMap = (MapView) findViewById(R.id.`myMap^);
+
+//set up a Point and assign it the latPoint and lngPoint values that you retrieved from the GPS:
+Point myLocation = new Point(latPoint.intValue(),lngPoint.intValue());
+MapController myMapController = myMap.getController();
+
+//use the controller to move the map to your location (to make themap a little more recognizable, set the zoom to 9):
+myMapController.centerMapTo(myLocation, false);
+myMapController.zoomTo(9);
+XSETm END
+XSETm $layout_rel
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	`$androidlayout^ >
+</RelativeLayout>
+XSETm END
+XSETm $string_xml
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">FindAFriend</string>
+	<string name="menu_delete">Delete</string>
+	<string name="menu_insert">Add Friend</string>
+</resources>
+XSETm END
+XSETm $content_custom1
+package android_programmers_guide.FindAFriend; //change
+
+import android.net.Uri;
+import android.provider.BaseColumns;
+
+public final class `Friends^ {
+	public static final class Friend implements BaseColumns {
+		public static final Uri CONTENT_URI = Uri.parse("content://android_programmers_guide.FindAFriend.`Friends^/friend"); //change
+		public static final String DEFAULT_SORT_ORDER = "modified DESC";
+		public static final String NAME = "name";
+		public static final String LOCATION = "location";
+		public static final String CREATED_DATE = "created";
+		public static final String MODIFIED_DATE = "modified";
+	}
+}
+XSETm END
+XSETm $content_custom2
+package android_programmers_guide.FindAFriend;
+
+import android_programmers_guide.FindAFriend.Friends; //Change it to the class you created in step1
+import android.content.*;
+import android.database.Cursor;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteQueryBuilder;
+import android.net.Uri;
+import android.text.TextUtils;
+import android.util.Log;
+import java.util.HashMap;
+
+public class FriendsProvider extends ContentProvider {
+	private SQLiteDatabase mDB;
+	private static final String TAG = "FriendsProvider";
+	private static final String DATABASE_NAME = "friends";
+	private static final int DATABASE_VERSION = 2;
+	private static HashMap<String, String> FRIENDS_PROJECTION_MAP;
+	private static final int FRIENDS = 1;
+	private static final int FRIENDS_ID = 2;
+	private static final UriMatcher URL_MATCHER;
+
+	private static class DatabaseHelper extends SQLiteOpenHelper {
+		@Override
+		public void onCreate(SQLiteDatabase db) {
+			db.execSQL("CREATE TABLE friends (_id INTEGER PRIMARY KEY,"
+				+ "name TEXT," + "location TEXT," + "created INTEGER,"
+				+ "modified INTEGER" + ");");
+		}
+		@Override
+		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+			Log.w(TAG, "Upgrading database from version " + oldVersion + "to "
+			+ newVersion + ", which will destroy all old data");
+			db.execSQL("DROP TABLE IF EXISTS friends");
+			onCreate(db);
+		}
+	}
+
+	@Override
+	public boolean onCreate() {
+		DatabaseHelper dbHelper = new DatabaseHelper();
+		mDB = dbHelper.openDatabase(getContext(), DATABASE_NAME, null, DATABASE_VERSION);
+		return (mDB == null) ? false : true;
+	}
+	@Override
+	public Cursor query(Uri url, String[] projection, String selection, String[] selectionArgs, String sort) {
+		SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
+		switch (URL_MATCHER.match(url)) {
+			case FRIENDS:
+				qb.setTables("friends");
+				qb.setProjectionMap(FRIENDS_PROJECTION_MAP);
+				break;
+			case FRIENDS_ID:
+				qb.setTables("friends");
+				qb.appendWhere("_id=" + url.getPathSegments().get(1));
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown URL " + url);
+		}
+		String orderBy;
+		if (TextUtils.isEmpty(sort)) {
+			orderBy = Friends.Friend.DEFAULT_SORT_ORDER;
+		} else {
+			orderBy = sort;
+		}
+		Cursor c = qb.query(mDB, projection, selection, selectionArgs, null, null, orderBy);
+		c.setNotificationUri(getContext().getContentResolver(), url);
+		return c;
+	}
+	@Override
+	public String getType(Uri url) {
+		switch (URL_MATCHER.match(url)) {
+			case FRIENDS:
+				return "vnd.android.cursor.dir/vnd.android_programmers_guide.friend";
+			case FRIENDS_ID:
+				return "vnd.android.cursor.item/vnd.android_programmers_guide.friend";
+			default:
+				throw new IllegalArgumentException("Unknown URL " + url);
+		}
+	}
+	@Override
+	public Uri insert(Uri url, ContentValues initialValues) {
+		long rowID;
+		ContentValues values;
+		if (initialValues != null) {
+			values = new ContentValues(initialValues);
+		} else {
+			values = new ContentValues();
+		}
+		if (URL_MATCHER.match(url) != FRIENDS) {
+			throw new IllegalArgumentException("Unknown URL " + url);
+		}
+		Long now = Long.valueOf(System.currentTimeMillis());
+		Resources r = Resources.getSystem();
+		if (values.containsKey(Friends.Friend.CREATED_DATE ) == false) {
+			values.put(Friends.Friend.CREATED_DATE, now);
+		}
+		if (values.containsKey(Friends.Friend.MODIFIED_DATE) == false) {
+			values.put(Friends.Friend.MODIFIED_DATE, now);
+		}
+		if (values.containsKey(Friends.Friend.NAME) == false) {
+			values.put(Friends.Friend.NAME,
+			r.getString(android.R.string.untitled));
+		}
+		if (values.containsKey(Friends.Friend.LOCATION) == false) {
+			values.put(Friends.Friend.LOCATION , "");
+		}
+		rowID = mDB.insert("friends", "friend", values);
+		if (rowID > 0) {
+			Uri uri = ContentUris.withAppendedId(Friends.Friend.CONTENT_URI, rowID);
+			getContext().getContentResolver().notifyChange(uri, null);
+			return uri;
+		}
+		throw new SQLException("Failed to insert row into " + url);
+	}
+	@Override
+	public int delete(Uri url, String where, String[] whereArgs) {
+		int count;
+		long rowId = 0;
+		switch (URL_MATCHER.match(url)) {
+			case FRIENDS:
+				count = mDB.delete("friends", where, whereArgs);
+				break;
+			case FRIENDS_ID:
+				String segment = url.getPathSegments().get(1);
+				rowId = Long.parseLong(segment);
+				count = mDB
+					.delete("friends", "_id="
+					+ segment
+					+ (!TextUtils.isEmpty(where) ? " AND (" + where
+					+ ')' : ""), whereArgs);
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown URL " + url);
+		}
+		getContext().getContentResolver().notifyChange(url, null);
+		return count;
+	}
+	@Override
+	public int update(Uri url, ContentValues values, String where, String[] whereArgs) {
+		int count;
+		switch (URL_MATCHER.match(url)) {
+			case FRIENDS:
+				count = mDB.update("friends", values, where, whereArgs);
+				break;
+			case FRIENDS_ID:
+				String segment = url.getPathSegments().get(1);
+				count = mDB
+					.update("friends", values, "_id=" + segment
+					+ (!TextUtils.isEmpty(where) ? " AND (" + where + ')' : ""), whereArgs);
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown URL " + url);
+		}
+		getContext().getContentResolver().notifyChange(url, null);
+		return count;
+	}
+	static {
+		URL_MATCHER = new UriMatcher(UriMatcher.NO_MATCH);
+		URL_MATCHER.addURI("android_programmers_guide.FindAFriend.Friends", "friend", FRIENDS);
+		URL_MATCHER.addURI("android_programmers_guide.FindAFriend.Friends", "friend/#", FRIENDS_ID);
+		FRIENDS_PROJECTION_MAP = new HashMap<String, String>();
+		FRIENDS_PROJECTION_MAP.put(Friends.Friend._ID, "_id");
+		FRIENDS_PROJECTION_MAP.put(Friends.Friend.NAME, "name");
+		FRIENDS_PROJECTION_MAP.put(Friends.Friend.LOCATION, "location");
+		FRIENDS_PROJECTION_MAP.put(Friends.Friend.CREATED_DATE, "created");
+		FRIENDS_PROJECTION_MAP.put(Friends.Friend.MODIFIED_DATE, "modified");
+	}
+}
+XSETm END
+XSETm $providers_samp
+<provider android:name="FriendsProvider"
+android:authorities="android_programmers_guide.FindAFriend.Friends" />
+XSETm END
+XSETm $androidpadding
+android:padding="5dp"
+//android:paddingLeft="6dip"
+//android:paddingRight="6dip"
+//android:paddingBottom="3dip"
+XSETm END
+XSETm $string_plural
+<plurals name="androidPlural">
+	<item quantity="one">One android</item>
+	<item quantity="other">%d androids</item>
+</plurals>
+XSETm END
+`choose^Z(pickL(GetVar("AndroidTemplatesDict")))^

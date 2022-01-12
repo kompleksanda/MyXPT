@@ -120,7 +120,7 @@ fun! s:f.pickL(lst, ... )
 			    let id = tlib#input#List('si', desc, key)
 			    if type(id) == type(0)
 				    if id == 0
-					return self.Cancel()
+						return self.Cancel()
 				    endif
 				    let v = valu[id-1]
 			    else
@@ -128,7 +128,7 @@ fun! s:f.pickL(lst, ... )
 			    endif
 			endwhile
 			if type(v) == type([])
-			        let desc .= "->" . key[id-1]
+			    let desc .= "->" . key[id-1]
 				return s:final(tlib#input#List('s',desc,v))
 			else
 				return s:final(v)
@@ -219,14 +219,10 @@ fun! s:f.ACB( list, ... )
     let result = self.AC(list)
 	if type(result) == type({})
 		let result.action = "build"
-		let result.nav    = "stay"
 	endif
 	return result
 endfunction
-fun! s:f.CC()
-    return b:xptemplateData.renderContext
-endfunction
-fun! s:f.PlacePos()
+fun! s:PlacePos()
 	let clb = b:_xpmark.changeLikelyBetween.start
 	let sss = split(clb, '`', 1)
 	let sss2 = sss[-2]
@@ -244,28 +240,27 @@ fun! s:f.PlacePos()
 		else
 			return matchstr(sss2, '\V\^\d\+\$') + 2
 		endif
-
 	else
 		return matchstr(sss2, '\V\^\d\+\$') + 1
 	endif
 endfunction
 fun! s:f.StillHasPH()
-	if self.CC().item.placeHolders == []
+	if self.C().item.placeHolders == []
 		return 0
 	else
 		return 1
 	endif
 endfunction
 fun! s:f.CheckAndResolve( param )
-    if self.Phase(  ) == 'post'
+    if self.Phase() == 'post'
 	    return 0
     elseif self.Phase() ==  'rendering'
-	    return ""
+		return ""
     endif
-    let poi = self.PlacePos()
+    let poi = s:PlacePos()
     "echom poi . string(a:param) . self.Phase()
-    if poi == 1
-		" `a^ with |ontype
+	if poi == 1
+		" `a^ with |ontype or `a^b()^
 		return a:param.xset
     else
 		" `a^`a^b()^
@@ -275,7 +270,7 @@ endfunction
 fun! s:f.ACM( list )
     let list = keys(a:list)
     let v = self.V0()
-	echom "******" . v
+    "echom "******" . v . string(list) . self.Phase()
     let conti = []
     for word in list
 		let idx = matchstrpos(v, word)
@@ -291,22 +286,20 @@ fun! s:f.ACM( list )
 		"let nonEscaped = '\%(' .     '\%(\[^\\]\|\^\)' .     '\%(\\\\\)\*' . '\)' . '\@<='
 		"echom string(conti)
 		let texta = (a:list[conti[0][0]] =~ "`") ? (a:list[conti[0][0]]) : a:list[conti[0][0]][len(conti[0][3]):]
-	    let par.ph =  {'action':'text','text':texta}
+	    let par.ph =  {'action':'text','text':texta, "AC":1}
 		" texta = v[:conti[0][2]-1] . a:list[conti[0][0]] . v[conti[0][2]:]
 	    let texta = ((conti[0][1] == 0) ? "" : v[:conti[0][1]-1]) . a:list[conti[0][0]] . v[conti[0][2]:]
-	    let par.xset =  {'action':'text','text':texta}
+	    let par.xset =  {'action':'text','text':texta, "AC":1}
 	    return self.CheckAndResolve( par )
     else
+		"echom string(conti)
 	    return self.CheckAndResolve( { 'xset':0, 'ph':"" } )
     endif
 endfunction
-fun! s:f.ACMB( list )
+fun! s:f.ACMB( list, ...)
 	let result = self.ACM(a:list)
-	if type(result) == type({})
+	if type(result) == type({}) && has_key(result, "AC")
 		let result.action = 'build'
-		if has_key(result, "text")
-			let result.nav = (result.text =~ '`') ? "next" : "stay"
-		endif
 	endif
 	return result
 endfunction
@@ -421,7 +414,8 @@ fun! s:f.ExpandInsideEdge2( newLeftEdge, newRightEdge )
                 \. er
 endfunction
 fun! s:f.execut( arg )
-	return execute(a:arg)[1:]
+	let a = execute(a:arg)[1:]
+	return a
 endfunction
 fun! s:f.Pre( arg )
 	return a:arg
@@ -443,14 +437,28 @@ fun! s:f.NextC( ... )
 		  if a:1 == self.Cancel()
 			  return a:1
 		  endif
-		  return extend(a:1,{'nav':'next', 'fromNext':1})
+		  return extend(a:1, {'nav':'next', 'fromNext':1}, "force")
 	  else
     		  return { 'nav' : 'next', 'fromNext':1, 'text' : join( a:000, '' ) }
 	  endif
   endif
 endfunction
+fun! s:f.Stay( ... )
+  if a:0 == 0
+    return { 'nav' : 'stay'}
+  else
+	  if type(a:1) == type({})
+		  if a:1 == self.Cancel()
+			  return a:1
+		  endif
+		  return extend(a:1, {'nav':'stay'}, "force")
+	  else
+    		  return { 'nav' : 'stay', 'text' : join( a:000, '' ) }
+	  endif
+  endif
+endfunction
 fun! s:f.snipGS( query, ...)
-	if a:0 == 1|echom string(a:1)|endif
+	"if a:0 == 1|echom string(a:1)|endif
 	let xptObj = b:xptemplateData
 	let xt = xptObj.filetypes[g:GetSnipFileFT()].allTemplates
 	let [super, sett] = items(a:query)[0]
@@ -516,8 +524,11 @@ fun! s:f.snipGS( query, ...)
 	endif
 	return 'let _1Aa5_Tw2 = 0'
 endfunction
+fun! s:f.snipS( query, val)
+	call self.snipGS(a:query, a:val)
+endfunction
 fun! s:f.xset(str, ...)
-	echom "**********" . string(a:str)
+	"echom "**********" . string(a:str)
 	if type(a:str) != type("") && type(a:str) != type([])
 		return a:str
 	endif
@@ -527,7 +538,7 @@ fun! s:f.xset(str, ...)
 	endif
 	if a:0 == 1
 		let xt = xptObj.filetypes[g:GetSnipFileFT()].allTemplates
-		toSnip = get(xt, a:1)
+		let toSnip = get(xt, a:1)
 		if toSnip is 0
 			return ""
 		endif
@@ -557,7 +568,7 @@ fun! s:f.SettingK(name)
 	if toSnip is 0
 		return
 	endif
-	echom string(toSnip.setting)
+	"echom string(toSnip.setting)
 	let rSo = deepcopy(xptObj.renderContext.snipObject)
 	call g:MyMergeSetting(rSo.setting, toSnip.setting)
 	let xptObj.renderContext.snipObject = rSo
@@ -581,10 +592,8 @@ fun! s:f.getVariables(...)
 				let a = a:1
 			endif
 		endif
-		if (a:0 == 2) && type(a:2) == type("")
-			let a = [a:2]
-		else
-			let a = a:2
+		if (a:0 == 2)
+			let a = (type(a:2) == type("")) ? [a:2] : a:2
 		endif
 	endif
 	for snip in a1
@@ -593,7 +602,7 @@ fun! s:f.getVariables(...)
 	let variables = xpt#util#RemoveDuplicateFrom(keys(variables), a)
 	let newv = []
 	for a in variables
-		if a[0] == "$" && !(a =~ '\V\^$_\.\*_\$')
+		if a[0] == "$" && !(a =~ '\V\^$_\.\*_\$') && !(a =~ '\V\^\.\+!!\$')
 				call add(newv, a[1:])
 		endif
 	endfor
@@ -601,6 +610,9 @@ fun! s:f.getVariables(...)
 	return self.NextC(self.pickL(newv))
 endfunction
 fun! s:f.getVariablesPost(var, ...)
+	if a:var =~ '\V\.\+!!\$'
+		return '`' . a:var[1:] . '^'
+	endif
 	let vars = {}
 	if a:0 == 1
 		let snips =  (type(a:1) == type("")) ? [a:1] : a:1
@@ -621,22 +633,22 @@ fun! s:f.getVariablesPost(var, ...)
 	endif
 	return (has_key(vars, a:var)) ? vars[a:var] : self.V()
 endfunction
-fun! s:f.ReturnIfEq( expected, retval, ...)
-	let v = self.V0()
-	let expected = (type(a:expected) == type("")) ? [a:expected] : a:expected
-	if a:0 == 1
-		return index(expected, v) != -1 ? a:retval : a:1
+fun! s:f.RIE( expected, retval, ...)
+	let [v, expected, retval] =  (a:0 == 2) ? ([a:expected, a:retval, a:1]) : ([self.V0(), a:expected, a:retval])
+	let expected = (type(expected) == type("")) ? [expected] : expected
+	if a:0 > 0
+		return index(expected, v) != -1 ? retval : a:000[-1]
 	else
-		return index(expected, v) != -1 ? a:retval : self.V()
+		return index(expected, v) != -1 ? retval : self.V()
 	endif		
 endfunction
-fun! s:f.ReturnIfNotEq( expected, retval, ... )
-	let v = self.V0()
-	let expected = (type(a:expected) == type("")) ? [a:expected] : a:expected
-	if a:0 == 1
-		return index(expected, v) == -1 ? a:retval : a:1
+fun! s:f.RINE( expected, retval, ... )
+	let [v, expected, retval] =  a:0 == 2 ? [a:expected, a:retval, a:1] : [self.V0(), a:expected, a:retval]
+	let expected = (type(expected) == type("")) ? [expected] : expected
+	if a:0 > 0
+		return index(expected, v) == -1 ? retval : a:000[-1]
 	endif 
-		return index(expected, v) == -1 ? a:retval : self.V()
+		return index(expected, v) == -1 ? retval : self.V()
 	endif
 endfunction
 fun! s:f.ChainX(...)
@@ -657,21 +669,97 @@ fun! s:f.ChainZ(...)
 		return result
 	endif
 endfunction
+fun! s:f.BreakPick(str, pos, ...)
+	let l = ''
+	if type(a:str) == type("")
+		let str = {"":a:str}
+	else
+		let str =  a:str
+	endif
+	let nonEscaped = '\%(' .     '\%(\[^\\]\|\^\)' .     '\%(\\\\\)\*' . '\)' . '\@<='
+	for [k, v] in items(str)
+		let l .= get(self.snipGS({k : "variables"}), v, ""). "\n"
+	endfor
+	let l = split(l, "\n")
+	let d = {}
+	for s in l
+		if s == ""
+			continue
+		endif
+		let key = matchstr(s, '\V\[^=]\*\ze=')
+		if key == ''
+			let d[s] = s
+		else
+			if key[-1:-1] == "\\"
+				let rkey = key
+				while key[-1:-1] == "\\"
+					let mres = "=" . matchstr(s[len(key)+1:],  '\V\[^=]\*\ze=')
+					let rkey = rkey[:-2] . mres
+					let key .= "=" . mres
+				endwhile
+				let key = rkey
+			endif
+			let val = matchstr(s, '\V'. nonEscaped.'=\s\*\zs\.\*')
+			let val = substitute(val, '\\n', "\n", 'g')
+			let d[key] = val
+		endif
+	endfor
+	if a:pos == "def"
+		return self.Choose(keys(d))
+		"return self.NextC(self.pickL(keys(d)))
+	else
+		return (has_key(d, a:1)) ? d[a:1] : self.V()
+	endif
+endfunction
+fun! s:f.Restrict(limit)
+	let typed = self.V()
+	let len = len(typed)
+	if len >= a:limit
+		return {"text" : typed[0: -1 + a:limit - len]}
+	else
+		return 0
+	endif
+endfunction
+fun! s:f.AlignR(arg, ...)
+	let le = (a:0 == 1) ? a:1 : "_"
+	let t = self.V()
+	let l = len(t)
+	if l <= a:arg
+		let text = repeat(le, a:arg - l) . t
+	elseif l > a:arg
+		let text = t[l - a:arg:]
+	endif
+	return {"text":text}
+endfunction
+fun! s:f.AlignL(arg, ...)
+	let le = (a:0 == 1) ? a:1 : "_"
+	let l = len(self.V())
+	if l <= a:arg
+		let text = repeat(le, a:arg - l)
+	else
+		let text = ""
+	endif
+	return {"text":text}
+endfunction
+fun! s:f.Text(arg, ...)
+	let a = (a:0 == 1) ? a:1 : {}
+	return extend({"action" : "text", "text" : a:arg}, a, "force")
+endfunction
+fun! s:f.FilterText(arg, ...)
+	let [name, fil, snip] = [a:arg, "defaultValues", ""]
+	if a:0 == 1
+		let fil = a:1
+	elseif a:0 == 2
+		let snip =  a:arg
+		let name = a:1
+		let fil = a:2
+	endif
+	return self.snipGS({snip:{fil:{name:"text"}}})
+endfunction
 
 
 XPT _chooseXSET hidden
-XSET function.pre=function
-XSET function.def=getVariables()
-XSET function.post=getVariablesPost("$".V())
-`function^
-
-XPT pre
-XSET $want=1
-XSET $dont want=2
-
-XPT test alias=_chooseXSET
-XSET $myown=dfg
-XSET $pick not=dfgd
-XSET $pick more=dfgsdd
-XSET function.def=getVariables(["pre", ""], ["$dont want","$pick not"])
-XSET function.post=getVariablesPost("$".V(), ["pre", ""])
+XSET _chooseXSET.pre=_chooseXSET
+XSET _chooseXSET.def=getVariables()
+XSET _chooseXSET.post=getVariablesPost("$".V())
+`_chooseXSET^

@@ -199,9 +199,9 @@ XSET $length numbers of arguments passed into function=length
 XSET $callee this function itself=callee.
 
 XPT strr setting=str
-`var_name^.`function^
+`var_name^.`Snippet("_chooseXSET")^
 XPT ree setting=re
-`var_name^.`function^
+`var_name^.`Snippet("_chooseXSET")^
 XPT datee setting=date text=ree
 XPT elemm setting=elem text=re
 ..XPT

@@ -35,30 +35,10 @@ fun! xpt#eval#Eval(str,closures)
 	endtry
 endfunction
 fun! xpt#eval#Exec(str,closures)
-	"echom "(X1)->".string(a:str)
-	if type(a:str) != type('')
-		return a:str
-	endif
-	if a:str == ''
-		return ''
-	endif
-	let globals = a:closures[0]
-	let x = b:xptemplateData
-	let expr = xpt#eval#Compile(a:str)
-	let globals._ctx = { 'closures':a:closures, 'renderContext':x.renderContext, }
-	let xfunc = globals
+	let xfunc = a:closures[0]
 	let SnIp = a:closures[-1]
-	try
-		"echom "  (X2)->" . string(eval(expr))
-		let r = execute(eval(expr))
-		"echom "     (X3)->" . string(r[1:])
-		return r[1:]
-	catch /.*/
-		call XPT#warn(v:throwpoint)
-		call XPT#warn(v:exception)
-		call XPT#warn(expr)
-		return ''
-	endtry
+	let r =  execute(xpt#eval#Eval(a:str, a:closures))
+	return r[1:]
 endfunction
 fun! xpt#eval#Compile(s)
 	if a:s is ''

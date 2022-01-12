@@ -1,0 +1,52 @@
+XPTemplate priority=lang
+
+let s:f = g:XPTfuncs()
+
+" use snippet 'varConst' to generate contant variables
+" use snippet 'varFormat' to generate formatting variables
+" use snippet 'varSpaces' to generate spacing variables
+
+
+XPTinclude
+	  \ _common/common
+
+
+XPT R dyn synonym=Build|BuildSnippet|Echo|PrevItem|EchoIfNoChange|Commentize|BuildIfChange|BuildIfNoChange|Trigger|Next|Choose|UpperCase|LowerCase|execut|Pre|Setting|SettingK
+`$_xSnipName^(`arg^)
+
+XPT Item alias=R synonym=GetWrappedText|Edges|Cancel
+XSET arg=Void()
+
+XPT SV alias=R
+XSET arg=`pattern^, `replace^, `flag^
+
+XPT S alias=R
+XSET arg=`expr^, `pattern^, `replace^, `flag^
+
+XPT ChooseStr alias=R synonym=Vmatch|pickL|AC|ACB|ACM|ACMB|MergeSSetting|XS|ZS|sCat|NextC|Stay|SnipGS|xset|ReIfEq|ReIfNEq|ChainX|ChainZ|FilterText
+XSET arg=`text^` `...{{^, `text^`, `...^`}}^
+
+XPT EchoIf alias=R
+XSET arg=`is_true^, `text^
+
+XPT EchoIfEq alias=R
+XSET arg=`expected^, `text^
+
+XPT ExpandIfNotEmpty alias=R
+XSET arg=`left^, `item^`, `right?^
+
+XPT ExpandInsideEdge alias=R synonym=ExpandInsideEdge2
+XSET arg=`left^, `right^
+
+XPT SnipS alias=R
+XSET arg=`query^, `val^
+
+XPT FilterText setting=_chooseXSET
+XSET $(name, "defaultValues") choose inside this snippet=`name^`, `"defaultValues"^
+XSET $(name, "defaultValues", snipname)=`name^, `filt^, `snipname^
+XSET filt=ChooseStr('"defaultValues"', '"preValues"', '"postFilters"')
+`$_xSnipName^(`Snippet("_chooseXSET")^)
+
+XPT Text text=FilterText setting=_chooseXSET
+XSET $(text)=`text^
+XSET $(text, {action:\.\.\.}=`text^, {`^}

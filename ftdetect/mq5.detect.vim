@@ -1,0 +1,1 @@
+au BufRead,BufNewFile *.mq5 set filetype=mq5

@@ -1,0 +1,332 @@
+XPTemplate priority=sub
+
+XPTinclude
+    \ _common/personal
+
+let s:f = g:XPTfuncs()
+
+XPT _gettickdata_ alias=_chooseXSET
+XSETm $from SymbolInfoTick
+MqlTick `myTick^;
+SymbolInfoTick(_Symbol, `myTick^);
+
+double `orderPrice^ = `myTick^.`data^ChooseStr("bid", "ask")^
+XSETm END
+XSETm $from SymbolInfoDouble
+double `orderPrice^ = SymbolInfoDouble(_Symbol, `symbol_type^ChooseStr("SYMBOL_BID", "SYMBOL_ASK")^)
+XSETm END
+
+XPT _calcstopfrompoint_ hidden
+double getStopLoss(string oType, int pStopPoints, double pOpenPrice) {
+    if oType == "BUY" {
+        double stopLoss = pOpenPrice - (pStopPoints * _Point);
+    } else if oType == "SELL" {
+        double stopLoss = pOpenPrice + (pStopPoints * _Point);
+    }
+    stopLoss = NormalizeDouble(stopLoss,_Digits);
+    return(stopLoss);
+}
+
+// Input variables
+input int `StopLoss^ = `500^;
+
+// OnTick() event handler
+`_^Trigger("_gettickdata_")^
+double `useStopLoss^ = getStopLoss(`oType^ChooseStr('"BUY"', '"SELL"'))^, `StopLoss^, `orderPrice^);
+
+XPT _handleRequestReturnCode_ hidden
+//Handle request return code
+switch (`result^.retcode){
+    case TRADE_RETCODE_DONE:
+    case TRADE_RETCODE_DONE_PARTIAL:
+    case TRADE_RETCODE_PLACED:
+        Print(`message^);
+        break;
+    case TRADE_RETCODE_REQUOTE:
+    case TRADE_RETCODE_CONNECTION:
+    case TRADE_RETCODE_PRICE_CHANGED:
+    case TRADE_RETCODE_TIMEOUT:
+    case TRADE_RETCODE_PRICE_OFF:
+    case TRADE_RETCODE_REJECT:
+    case TRADE_RETCODE_ERROR:
+        //rety
+        break;
+    default:
+        //TradeServerReturnCodeDescription from #include <errordescription.mqh>
+        Print("ERROR! ", `message^, " Error code:", `result^.retcode, "Error desc", TradeServerReturnCodeDescription(`result^.retcode));
+}
+
+XPT _checkStopPrices_ hidden
+//Check Stop Prices
+double stopLevel = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+double minStopLevel = SymbolInfoDouble(_Symbol, `sym_type^RIE(R("order_dir"),["ORDER_TYPE_BUY_STOP","ORDER_TYPE_BUY_LIMIT","ORDER_TYPE_BUY_STOP_LIMIT"],"SYMBOL_ASK","SYMBOL_BID")^) `sign^RIE(R("order_dir"), ["ORDER_TYPE_BUY_STOP", "ORDER_TYPE_SELL_LIMIT", "ORDER_TYPE_BUY_STOP_LIMIT"], "+", "-")^ stopLevel;
+if(`request^.price <= minStopLevel){
+    Print("Invalid stop price");
+}
+if(`request^.tp > 0 && `request^.tp <= `request^.price `sign^RIE(R("order_dir"), ["ORDER_TYPE_BUY_LIMIT","ORDER_TYPE_BUY_LIMIT", "ORDER_TYPE_BUY_STOP", "ORDER_TYPE_BUY_STOP_LIMIT"], "+", "-")^ stopLevel){
+    Print("Invalid TP price");
+}
+if(`request^.sl > 0 && `request^.sl <= `request^.price `sign^RIE(R("order_dir"), ["ORDER_TYPE_BUY_LIMIT", "ORDER_TYPE_BUY_STOP", "ORDER_TYPE_BUY_STOP_LIMIT"], "-", "+")^ stopLevel){
+    Print("Invalid SL price");
+}
+
+"--------------------------------TEMPLATE---------------------------------------
+"|
+"|
+"-------------------------------------------------------------------------------
+
+XPT templates dyn alias=_chooseXSET
+XSET $function calc stoploss from points and open price=`:_calcstopfrompoint_:^
+XSETm $send mail message
+string subject = "`Trade placed^";
+string text = "A trade was placed on " + _Symbol;
+SendMail(subject,text);
+XSETm END
+XSETm $create program properties
+#property copyright "Alexander Akinyomola"
+#property link "http://kompleksanda.blogspot.com"
+#property version "`1.0^"
+#property description "`Dual moving average cross with trailing stop^"
+
+#define COMPANY_NAME "Kompleks EA"
+XSETm END
+XSETm $create market order trade request
+//Reuseable variables
+MqlTradeRequest `request^;
+MqlTradeResult `result^;
+ZeroMemory(`request^);
+
+`request^.action = TRADE_ACTION_DEAL;
+`request^.type = `order_dir^ChooseStr("ORDER_TYPE_BUY", "ORDER_TYPE_SELL")^;
+`request^.symbol = _Symbol;
+`request^.volume = `1^;
+`request^.type_filling = ORDER_FILLING_FOK;
+`request^.price = SymbolInfoDouble(_Symbol, `price^ChooseStr("SYMBOL_ASK", "SYMBOL_BID")^;
+`request^.sl = 0;
+`request^.tp = 0;
+`request^.deviation = `50^;
+
+OrderSend(`request^, `result^);
+
+`:_handleRequestReturnCode_({"message":'"Market order created"'}):^
+XSETm END
+XSETm $modify/edit stoploss or takeprofit of market order
+`request^.action = TRADE_ACTION_SLTP;
+`request^.symbol = _Symbol;
+`request^.sl = `1.3500^;
+`request^.tp = `1.3650^;
+
+OrderSend(`request^, `result^);
+
+`:_handleRequestReturnCode_({"message":'"Market order sl/tp modified"'}):^
+XSETm END
+XSETm $create stop or limit pending order trade request
+//Reuseable variables
+MqlTradeRequest `request^;
+MqlTradeResult `result^;
+ZeroMemory(`request^);
+
+`request^.action = TRADE_ACTION_PENDING;
+`request^.type = `order_dir^ChooseStr("ORDER_TYPE_BUY_STOP", "ORDER_TYPE_SELL_STOP", "ORDER_TYPE_BUY_LIMIT", "ORDER_TYPE_SELL_LIMIT", "ORDER_TYPE_BUY_STOP_LIMIT", "ORDER_TYPE_SELL_STOP_LIMIT")^;
+`request^.symbol = _Symbol;
+`request^.volume = `1^;
+`request^.price = `1.3550^;
+`request^.sl = `1.350^;
+`request^.tp = `1.365^;
+`request^.type_time = ORDER_TIME_SPECIFIED;
+`request^.expiration = D'`2012.01.10 15:00^';
+`request^.type_filling = ORDER_FILLING_FOK;
+`request^.stoplimit = `0^;
+
+`:_checkStopPrices_:^
+
+OrderSend(`request^, `result^);
+
+`:_handleRequestReturnCode_({"message":'"Stop pending order created"'}):^
+XSETm END
+XSETm $modify/edit a pending stop or limit order
+`request^.action = TRADE_ACTION_MODIFY;
+`request^.order = `ticket^;
+`request^.price = `1.3600^;
+`request^.sl = `1.3550^;
+`request^.tp = `1.3700^;
+`request^.type_time = ORDER_TIME_SPECIFIED;
+`request^.expiration = D'`2012.01.10 18:00^';
+
+`:_checkStopPrices_:^
+
+OrderSend(request,result);
+
+`:_handleRequestReturnCode_({"message":'"Order modified"'}):^
+XSETm END
+XSETm $remove/delete/cancel a pending order
+`request^.action = TRADE_ACTION_REMOVE;
+`request^.order = `ticket^;
+
+OrderSend(`request^, `result^);
+
+`:_handleRequestReturnCode_({"message":'"Order cancelled"'}):^
+XSETm END
+XSETm $create moving average/ma indicator
+double `ma_data^[];
+ArraySetAsSeries(`ma_data^, true);
+
+int `maHandle^ = iMA(_Symbol, PERIOD_CURRENT, `MAPeriod^, 0, `mode^ChooseStr("MODE_SMA", "MODE_EMA")^, PRICE_CLOSE);
+CopyBuffer(`maHandle^, 0, 0, `1^, `ma_data^);
+XSETm END
+XSETm $get all last close/open/high/low candle prices into an array
+double `close^[];
+ArraySetAsSeries(`close^,true);
+Copy`type^ChooseStr("Close", "Open", "High", "Low")^(_Symbol, PERIOD_CURRENT, 0, `1^ , `close^);
+XSETm END
+XSETm $check/get position information (price/sl/tp/volume) info if any is open
+bool openPosition = PositionSelect(_Symbol);
+if(openPosition == true) {
+    long positionType = PositionGetInteger(POSITION_TYPE); //compare with POSITION_TYPE_BUY or POSITION_TYPE_SELL
+    double currentVolume = PositionGetDouble(POSITION_VOLUME);
+    double positionOpenPrice = PositionGetDouble(POSITION_PRICE_OPEN);
+}
+XSETm END
+XSETm $function translate order type to a simple name  ORDER_TYPE_BUY=buy
+string CheckOrderType(ENUM_ORDER_TYPE pType)
+{
+    string orderType;
+    if(pType == ORDER_TYPE_BUY) orderType = "buy";
+    else if(pType == ORDER_TYPE_SELL) orderType = "sell";
+    else if(pType == ORDER_TYPE_BUY_STOP) orderType = "buy stop";
+    else if(pType == ORDER_TYPE_BUY_LIMIT) orderType = "buy limit";
+    else if(pType == ORDER_TYPE_SELL_STOP) orderType = "sell stop";
+    else if(pType == ORDER_TYPE_SELL_LIMIT) orderType = "sell limit";
+    else if(pType == ORDER_TYPE_BUY_STOP_LIMIT) orderType = "buy stop limit";
+    else if(pType == ORDER_TYPE_SELL_STOP_LIMIT) orderType = "sell stop limit";
+    else orderType = "invalid order type";
+    return(orderType);
+}
+XSETm END
+XSETm $func adjust/check valid stop prices/level above and below
+double AdjustAboveStopLevel(string pSymbol, double currPrice, double pPrice, int pPoints = 10) {
+    double stopLevel = SymbolInfoInteger(pSymbol,SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+    double stopPrice = currPrice + stopLevel;
+    double addPoints = pPoints * _Point;
+    if (pPrice > stopPrice + addPoints) return(pPrice);
+    else {
+        double newPrice = stopPrice + addPoints;
+        Print("Price adjusted above stop level to " + DoubleToString(newPrice));
+        return(newPrice);
+    }
+}
+bool CheckAboveStopLevel(string pSymbol, double currPrice, double pPrice, int pPoints = 10) {
+    double stopLevel = SymbolInfoInteger(pSymbol,SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+    double stopPrice = currPrice + stopLevel;
+    double addPoints = pPoints * _Point;
+    if (pPrice > stopPrice + addPoints) return(true);
+    else return(false);
+}
+double AdjustBelowStopLevel(string pSymbol, double currPrice, double pPrice, int pPoints = 10) {
+    double stopLevel = SymbolInfoInteger(pSymbol,SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+    double stopPrice = currPrice - stopLevel;
+    double addPoints = pPoints * _Point;
+    if (pPrice < stopPrice - addPoints) return(pPrice);
+    else {
+        double newPrice = stopPrice - addPoints;
+        Print("Price adjusted below stop level to " + DoubleToString(newPrice));
+        return(newPrice);
+    }
+}
+bool CheckBelowStopLevel(string pSymbol, double currPrice, double pPrice, int pPoints = 10) {
+    double stopLevel = SymbolInfoInteger(pSymbol,SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+    double stopPrice = currPrice - stopLevel;
+    double addPoints = pPoints * _Point;
+    if (pPrice < stopPrice - addPoints) return(true);
+    else return(false);
+}
+XSETm END
+XSETm $func handle result code
+enum ENUM_CHECK_RETCODE {
+    CHECK_RETCODE_OK,
+    CHECK_RETCODE_ERROR,
+    CHECK_RETCODE_RETRY,
+};
+
+int CheckReturnCode(uint pRetCode) {
+    int status;
+    switch(pRetCode) {
+        case TRADE_RETCODE_REQUOTE:
+        case TRADE_RETCODE_CONNECTION:
+        case TRADE_RETCODE_PRICE_CHANGED:
+        case TRADE_RETCODE_TIMEOUT:
+        case TRADE_RETCODE_PRICE_OFF:
+        case TRADE_RETCODE_REJECT:
+        case TRADE_RETCODE_ERROR:
+            status = CHECK_RETCODE_RETRY;
+            break;
+        case TRADE_RETCODE_DONE:
+        case TRADE_RETCODE_DONE_PARTIAL:
+        case TRADE_RETCODE_PLACED:
+        case TRADE_RETCODE_NO_CHANGES:
+            status = CHECK_RETCODE_OK;
+            break; 
+        default: status = CHECK_RETCODE_ERROR;
+    }
+    return(status);
+}
+XSETm END
+XSETm $func close full/partial position using market execution/order
+void close(string pSymbol, int pPositionType, double pVolume=0.000000) {
+    request.action = TRADE_ACTION_DEAL;
+    request.symbol = pSymbol;
+    if(pPositionType == POSITION_TYPE_BUY) {
+        request.type = ORDER_TYPE_SELL;
+        request.price = SymbolInfoDouble(pSymbol,SYMBOL_BID);
+    } else if(pPositionType == POSITION_TYPE_SELL) {
+        request.type = ORDER_TYPE_BUY;
+        request.price = SymbolInfoDouble(pSymbol,SYMBOL_ASK);
+    } 
+    closeLots = PositionGetDouble(POSITION_VOLUME);
+    openType = PositionGetInteger(POSITION_TYPE);
+    posID = PositionGetInteger(POSITION_IDENTIFIER);
+    request.sl = PositionGetDouble(POSITION_SL);
+    request.tp = PositionGetDouble(POSITION_TP);
+
+    if(pVolume > closeLots || pVolume <= 0) request.volume = closeLots;
+    else request.volume = pVolume;
+    OrderSend(request, result);
+}
+XSETm END
+XSETm $iterate/get info/details of the pending order pool
+for(int i = 0; i < OrdersTotal(); i++) {
+    ulong orderTicket = OrderGetTicket(i); //must be at the top to select the order
+    string orderSymbol = OrderGetString(ORDER_SYMBOL);
+    long orderYype = OrderGetInteger(ORDER_TYPE); //Check against ORDER_TYPE_BUY_STOP, etc
+    double orderVolume = OrderGetDouble(ORDER_VOLUME_CURRENT);
+    double orderOpenPrice = OrderGetDouble(ORDER_PRICE_OPEN);
+    double orderSL = OrderGetDouble(ORDER_SL);
+    double orderTP = OrderGetDouble(ORDER_TP);   
+}
+XSETm END
+XSETm $get/return result properties
+Print("Return code is ", `result^.retcode);
+//Print("Deal ticket is ", `result^.deal); //For market orders
+Print("order ticket is ", `result^.order); //For pending order
+Print("order volume is ", `result^.volume);
+Print("order price is ", `result^.price);
+XSETm END
+XSETm $check for a new bar/candle
+//datetime `glLastBarTime^; //global variable
+MqlRates rates[];
+ArraySetAsSeries(rates,true);
+CopyRates(_Symbol,_Period,0,3,rates);
+
+bool newBar = false;
+if(glLastBarTime != rates[0].time) {
+    if(`glLastBarTime^ > 0) newBar = true;
+    glLastBarTime = rates[0].time;
+}
+XSETm END
+XSETm $return a class object using pointers
+`className^ *`functionName^(`params^) {
+    className `objectName^;
+    `cursor^;
+    return &`objectName^;
+}
+XSETm END

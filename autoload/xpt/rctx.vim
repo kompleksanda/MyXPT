@@ -50,8 +50,12 @@ fun! xpt#rctx#AddDefaultPHFilters(rctx,ph)
 	endif
 	let pfs = a:rctx.snipSetting.postFilters
 	if !has_key(pfs,a:ph.name)
+		let dfs = a:rctx.snipSetting.defaultValues
 		if a:ph.name =~ '\V\w\+?\$'
 			let pfs[ a:ph.name ] = xpt#flt#New( 0, "EchoIfNoChange('')" )
+		elseif a:ph.name =~ '\V\.\+!!_\*\$' && !has_key(dfs, a:ph.name)
+			let dfs[ a:ph.name ] = xpt#flt#New( 0, 'BreakPick({"":' . string("$".a:ph.name) . '}, "def")')
+			let pfs[ a:ph.name ] = xpt#flt#New( 0, 'BreakPick({"":' . string("$".a:ph.name) . '}, "post", V())')
 		endif
 	endif
 endfunction

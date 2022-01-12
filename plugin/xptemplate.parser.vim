@@ -7,10 +7,11 @@ set cpo-=< cpo+=B
 runtime plugin/xptemplate.conf.vim
 exec XPT#importConst
 com! -nargs=* XPTemplate if xpt#parser#InitSnippetFile( expand( "<sfile>" ), <f-args> ) == 'finish' | finish | endif
-com! -nargs=* XPTemplateDef call xpt#parser#LoadSnippetToParseList(expand("<sfile>")) | finish
+"com! -nargs=* XPTemplateDef call xpt#parser#LoadSnippetToParseList(expand("<sfile>")) | finish
 com! -nargs=* XPT           call xpt#parser#LoadSnippetToParseList(expand("<sfile>")) | finish
 com! -nargs=* XPTvar call xpt#parser#SetVar(<q-args>)
 com! -nargs=* XPTsnipSet call xpt#parser#SnipSet(<q-args>)
+com! -nargs=* XPTset call xpt#parser#XPTset(<q-args>)
 com! -nargs=+ XPTinclude call xpt#parser#Include(<f-args>)
 com! -nargs=+ XPTembed call xpt#parser#Embed(<f-args>)
 fun! XPTinclude(...)

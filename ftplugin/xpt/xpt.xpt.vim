@@ -197,7 +197,7 @@ Say hello to \`xpt^.
 
 
 
-XPT xpt " start template to write template
+XPT xpt1 " start template to write template
 XPTemplate priority=`prio^
 XSET prio=ChooseStr( 'all', 'spec', 'like', 'lang', 'sub', 'personal' )
 
@@ -219,9 +219,3 @@ Say hello to \`xpt\^.
 `cursor^
 
 ..XPT
-
-XPT xset
-\XSET $`name^=`name^
-`next^\`:xset:\^^
-
-

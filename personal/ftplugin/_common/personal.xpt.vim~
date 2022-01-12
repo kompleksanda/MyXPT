@@ -120,7 +120,7 @@ fun! s:f.pickL(lst, ... )
 			    let id = tlib#input#List('si', desc, key)
 			    if type(id) == type(0)
 				    if id == 0
-					return self.Cancel()
+						return self.Cancel()
 				    endif
 				    let v = valu[id-1]
 			    else
@@ -128,7 +128,7 @@ fun! s:f.pickL(lst, ... )
 			    endif
 			endwhile
 			if type(v) == type([])
-			        let desc .= "->" . key[id-1]
+			    let desc .= "->" . key[id-1]
 				return s:final(tlib#input#List('s',desc,v))
 			else
 				return s:final(v)
@@ -185,7 +185,7 @@ fun! s:f.AC( list, ... )
     if type( a:list ) == type( [] )
         let list = a:list
     elseif type(a:list) == type({})
-	let list = keys(a:list)
+		let list = keys(a:list)
     else
         let list = [ a:list ] + a:000
     endif
@@ -193,56 +193,36 @@ fun! s:f.AC( list, ... )
     let conti = []
     for word in list
         if word =~ '\V\^' . v
-	    call add(conti, word)
+	    	call add(conti, word)
         endif
     endfor
     if len(conti) == 1
-	let par = {}
-	if type(a:list) == type({})
-	    let par.xset = self.Echo(a:list[conti[0]])
-	    let par.ph = par.xset
+		let par = {}
+		if type(a:list) == type({})
+			let par.xset = self.Echo(a:list[conti[0]])
+			let par.ph = self.Echo(a:list[conti[0]][len(v):])
+		else
+			let par.xset =  self.Echo(conti[0])
+			let par.ph = self.Echo(conti[0][len(v):])
+		endif
+		return self.CheckAndResolve(par)
 	else
-	    let par.xset =  self.Echo(conti[0])
-	    let par.ph = self.Echo(conti[0][len(v):])
-    	endif
-	return self.CheckAndResolve(par)
-    else
-	return self.CheckAndResolve( { 'xset':0, 'ph':"" } )
+		return self.CheckAndResolve( { 'xset':0, 'ph':"" } )
     endif
 endfunction
 fun! s:f.ACB( list, ... )
-    if type( a:list ) == type( [] )
-        let list = a:list
-    elseif type(a:list) == type({})
-	let list = keys(a:list)
-    else
+    if type( a:list ) == type("")
         let list = [ a:list ] + a:000
-    endif
-    let v = self.V0()
-    let conti = []
-    for word in list
-        if word =~ '\V\^' . v
-	    call add(conti, word)
-        endif
-    endfor
-    if len(conti) == 1
-	let par = {}
-	if type(a:list) == type({})
-	    let par.xset = self.Build(a:list[conti[0]])
-	    let par.ph = par.xset
-	else
-	    let par.xset =  self.Build(conti[0])
-	    let par.ph = self.Build(conti[0][len(v):])
-    	endif
-	return self.CheckAndResolve(par)
     else
-	return self.CheckAndResolve( { 'xset':0, 'ph':"" } )
+        let list = a:list
     endif
+    let result = self.AC(list)
+	if type(result) == type({})
+		let result.action = "build"
+	endif
+	return result
 endfunction
-fun! s:f.CC()
-    return b:xptemplateData.renderContext
-endfunction
-fun! s:f.PlacePos()
+fun! s:PlacePos()
 	let clb = b:_xpmark.changeLikelyBetween.start
 	let sss = split(clb, '`', 1)
 	let sss2 = sss[-2]
@@ -260,80 +240,68 @@ fun! s:f.PlacePos()
 		else
 			return matchstr(sss2, '\V\^\d\+\$') + 2
 		endif
-
 	else
 		return matchstr(sss2, '\V\^\d\+\$') + 1
 	endif
 endfunction
 fun! s:f.StillHasPH()
-	if self.CC().item.placeHolders == []
+	if self.C().item.placeHolders == []
 		return 0
 	else
 		return 1
 	endif
 endfunction
 fun! s:f.CheckAndResolve( param )
-    if self.Phase(  ) == 'post'
+    if self.Phase() == 'post'
 	    return 0
     elseif self.Phase() ==  'rendering'
-	    return ""
+		return ""
     endif
-    let poi = self.PlacePos()
+    let poi = s:PlacePos()
     "echom poi . string(a:param) . self.Phase()
-    if poi == 1
-	" `a^ with |ontype
-	return a:param.xset
+	if poi == 1
+		" `a^ with |ontype or `a^b()^
+		return a:param.xset
     else
-	" `a^`a^b()^
-	return a:param.ph
+		" `a^`a^b()^
+		return a:param.ph
     endif
 endfunction
 fun! s:f.ACM( list )
     let list = keys(a:list)
     let v = self.V0()
+	"echom "******" . v . string(list) . self.Phase()
     let conti = []
     for word in list
-	let idx = matchstrpos(v, word)
-	if idx[0] != ""
-	    call add(conti, [word, idx[1], idx[2], idx[0]])
+		let idx = matchstrpos(v, word)
+		if idx[0] != ""
+	    	call add(conti, [word, idx[1], idx[2], idx[0]])
         endif
     endfor
     if len(conti) == 1
+		if type(a:list[conti[0][0]]) == type({})
+			return a:list[conti[0][0]]
+		endif
 	    let par = {}
-	    let texta = a:list[conti[0][0]][len(conti[0][3])-1:]
-	    let par.ph =  {'action':'text','text':texta}
-	    let leap = len(a:list[conti[0][0]])
-	    let texta = a:list[conti[0][0]] . v[conti[0][2]+leap:]
-	    if len(v) != 1
-		let texta = v[:conti[0][1]-1] . texta
-	    endif
-	    let par.xset =  {'action':'text','text':texta}
+		"let nonEscaped = '\%(' .     '\%(\[^\\]\|\^\)' .     '\%(\\\\\)\*' . '\)' . '\@<='
+		"echom string(conti)
+		let texta = (a:list[conti[0][0]] =~ "`") ? (a:list[conti[0][0]]) : a:list[conti[0][0]][len(conti[0][3]):]
+	    let par.ph =  {'action':'text','text':texta, "AC":1}
+		" texta = v[:conti[0][2]-1] . a:list[conti[0][0]] . v[conti[0][2]:]
+	    let texta = ((conti[0][1] == 0) ? "" : v[:conti[0][1]-1]) . a:list[conti[0][0]] . v[conti[0][2]:]
+	    let par.xset =  {'action':'text','text':texta, "AC":1}
 	    return self.CheckAndResolve( par )
     else
+		"echom string(conti)
 	    return self.CheckAndResolve( { 'xset':0, 'ph':"" } )
     endif
 endfunction
-fun! s:f.ACMB( list )
-    let list = keys(a:list)
-    let v = self.V0()
-    let conti = []
-    for word in list
-	let idx = matchstrpos(v, word)
-	if idx[0] != ""
-	    call add(conti, [word, idx[1], idx[2], idx[0]])
-        endif
-    endfor
-    if len(conti) == 1
-	    let par = {}
-	    let texta = a:list[conti[0][0]]
-	    let par.ph =  {'action':'build','text':texta}
-	    let leap = len(a:list[conti[0][0]])
-	    let texta = v[:conti[0][1]-1] . '`^' . a:list[conti[0][0]] . v[conti[0][2]+leap:]
-	    let par.xset =  {'action':'build','text':texta}
-	    return self.CheckAndResolve( par )
-    else
-	    return self.CheckAndResolve( { 'xset':0, 'ph':"" } )
-    endif
+fun! s:f.ACMB( list, ...)
+	let result = self.ACM(a:list)
+	if type(result) == type({}) && has_key(result, "AC")
+		let result.action = 'build'
+	endif
+	return result
 endfunction
 fun! s:f.IsChanged()
 	let initFull = self.ItemInitValueWithEdge()
@@ -362,7 +330,7 @@ fun! s:f.MergeSSetting( arg, ... )
 	let xptObj.renderContext.snipSetting = setting
 endfunction
 fun! s:f.ZS(arg, ...)
-	let rctx = b:xptemplateData.renderContext	
+	let rctx = b:xptemplateData.renderContext
 	"echom "----->" . string(a:arg)
 	let useri = has_key(rctx.leadingPlaceHolder, "mark") ? xpt#util#TextBetween(XPMposStartEnd(rctx.leadingPlaceHolder.mark)) : ""
 	let ret = xpt#eval#Eval(a:arg, [rctx.ftScope.funcs, rctx.snipSetting.variables, {"$UserInput":useri}])
@@ -388,16 +356,18 @@ fun! s:f.ZS(arg, ...)
 	return ret
 endfunction
 fun! s:f.XS(arg, ...)
-	let rctx = b:xptemplateData.renderContext	
+	let rctx = b:xptemplateData.renderContext
 	"echom "----->" . string(a:arg)
 	let useri = has_key(rctx.leadingPlaceHolder, "mark") ? xpt#util#TextBetween(XPMposStartEnd(rctx.leadingPlaceHolder.mark)) : ""
+	if !has_key(rctx.ftScope, "funcs")
+		"return ""
+	endif
 	let ret = xpt#eval#Exec(a:arg, [rctx.ftScope.funcs, rctx.snipSetting.variables, {"$UserInput": useri}])
 	if type(ret) != type('')
 		return ret
 	endif
 	if ret =~ '\V\^->import<-{\.\+}\$'
 		let rctx = b:xptemplateData.renderContext
-
 		call g:MyMergeSSetting(rctx.snipObject.setting, json_decode(ret[10:]))
 		let rctx.snipSetting = copy(rctx.snipObject.setting)
 		let ret = a:0 == 1 ? a:1 :  rctx.item.initValue
@@ -415,9 +385,9 @@ fun! s:f.XS(arg, ...)
 endfunction
 fun! s:f.Z(arg, ...)
 	if a:0 >= 1
-		return self.Next(self.ZS(a:arg), a:1)
+		return self.NextC(self.ZS(a:arg), a:1)
 	else
-		return self.Next(self.ZS(a:arg))
+		return self.NextC(self.ZS(a:arg))
 	endif
 endfunction
 fun! s:f.X(arg, ...)
@@ -426,6 +396,9 @@ fun! s:f.X(arg, ...)
 	else
 		return self.NextC(self.XS(a:arg))
 	endif
+endfunction
+fun! s:f.T(arg)
+	return string(a:arg)
 endfunction
 fun! s:f.ExpandInsideEdge2( newLeftEdge, newRightEdge )
     let v = self.V()
@@ -441,7 +414,8 @@ fun! s:f.ExpandInsideEdge2( newLeftEdge, newRightEdge )
                 \. er
 endfunction
 fun! s:f.execut( arg )
-	return execute(a:arg)[1:]
+	let a = execute(a:arg)[1:]
+	return a
 endfunction
 fun! s:f.Pre( arg )
 	return a:arg
@@ -457,25 +431,41 @@ fun! s:f.Cancel()
 endfunction
 fun! s:f.NextC( ... )
   if a:0 == 0
-    return { 'nav' : 'next' }
+    return { 'nav' : 'next', 'fromNext':1 }
   else
 	  if type(a:1) == type({})
 		  if a:1 == self.Cancel()
 			  return a:1
 		  endif
-		  return extend(a:1,{'nav':'next'})
+		  return extend(a:1, {'nav':'next', 'fromNext':1}, "force")
 	  else
-    		  return { 'nav' : 'next', 'text' : join( a:000, '' ) }
+    		  return { 'nav' : 'next', 'fromNext':1, 'text' : join( a:000, '' ) }
+	  endif
+  endif
+endfunction
+fun! s:f.Stay( ... )
+  if a:0 == 0
+    return { 'nav' : 'stay'}
+  else
+	  if type(a:1) == type({})
+		  if a:1 == self.Cancel()
+			  return a:1
+		  endif
+		  return extend(a:1, {'nav':'stay'}, "force")
+	  else
+    		  return { 'nav' : 'stay', 'text' : join( a:000, '' ) }
 	  endif
   endif
 endfunction
 fun! s:f.snipGS( query, ...)
+	"if a:0 == 1|echom string(a:1)|endif
 	let xptObj = b:xptemplateData
 	let xt = xptObj.filetypes[g:GetSnipFileFT()].allTemplates
 	let [super, sett] = items(a:query)[0]
 	if super == ""
 		if a:0 == 1 | let snipObject = deepcopy(xptObj.renderContext.snipObject)
 		else | let snipObject = xptObj.renderContext.snipObject | endif
+		"else | let snipObject = {"setting" : xptObj.renderContext.snipSetting} | endif
 		let toSnip = {"setting": snipObject.setting}
 	else
 		let toSnip = get(xt,super)
@@ -484,45 +474,62 @@ fun! s:f.snipGS( query, ...)
 			else | return "" | endif
 		endif
 	endif
-	if type(sett) != type({})
-		let curr = toSnip.setting
-		if type(sett) == type(0)
-			if a:0 == 1 | let curr = a:1
-			else | return curr | endif
-		endif
-		if type(sett) == type([])
-			let sett = sett[0]
-		endif
-		if sett =~ '\V\^$\w\+\$'
-			if a:0 == 1 | let curr.variables[sett] = a:1
-			else | return curr.variables[sett] | endif
+	try
+		if type(sett) != type({})
+			let curr = toSnip.setting
+			if type(sett) == type(0)
+				if a:0 == 1
+					if type(a:1) == type("") && a:1 == "_unlet_" | unlet toSnip.setting
+					else | let curr = a:1 | endif
+				else | return curr | endif
+			endif
+			if type(sett) == type([])
+				let sett = sett[0]
+			endif
+			if sett =~ '\V\^$\w\+'
+				if a:0 == 1
+					if type(a:1) == type("") && a:1 == "_unlet_" | unlet toSnip.setting.variables[sett]
+					else | let curr.variables[sett] = a:1 | endif
+				else | return curr.variables[sett] | endif
+			else
+				if a:0 == 1
+					if type(a:1) == type("") && a:1 == "_unlet_" | unlet toSnip.setting[curr]
+					else | let curr[sett] = a:1 | endif
+				else | return curr[sett] | endif
+			endif
 		else
-			if a:0 == 1 | let curr[sett] = a:1
-			else | return curr[sett] | endif
+			let [namee, listt] = items(sett)[0]
+			let curr = toSnip.setting[namee]
+			while type(listt) == type({})
+				let [namee, listt] = items(listt)[0]
+				let curr = curr[namee]
+			endwhile
+			if type(listt) == type(0)
+				if a:0 == 1
+					if type(a:1) == type("") && a:1 == "_unlet_" | unlet toSnip.setting[namee]
+					else | let curr = a:1 | endif
+				else | return curr | endif
+			else
+				if a:0 == 1
+					if type(a:1) == type("") && a:1 == "_unlet_" | unlet toSnip.setting[namee][listt]
+					else | let curr[listt] = a:1 | endif
+				else | return curr[listt] | endif
+			endif
 		endif
-	else
-		let [namee, listt] = items(sett)[0]
-		let curr = toSnip.setting[namee]
-		while type(listt) == type({})
-			let [namee, listt] = items(listt)[0]
-			let curr = curr[namee]
-		endwhile
-		if type(listt) == type(0)
-			if a:0 == 1 | let curr = a:1
-			else | return curr | endif
-		else
-			if a:0 == 1 | let curr[listt] = a:1
-			else | return curr[listt] | endif
-		endif
-	endif
-	if super == ""
+	catch /.*/
+	endtry
+	if super == "" && a:0 == 1
 		let xptObj.renderContext.snipObject = snipObject
 		let xptObj.renderContext.snipSetting = copy(xptObj.renderContext.snipObject.setting)
 	endif
 	return 'let _1Aa5_Tw2 = 0'
 endfunction
+fun! s:f.snipS( query, val)
+	call self.snipGS(a:query, a:val)
+endfunction
 fun! s:f.xset(str, ...)
-	if type(a:str) != type("")
+	"echom "**********" . string(a:str)
+	if type(a:str) != type("") && type(a:str) != type([])
 		return a:str
 	endif
 	let xptObj = b:xptemplateData
@@ -531,7 +538,7 @@ fun! s:f.xset(str, ...)
 	endif
 	if a:0 == 1
 		let xt = xptObj.filetypes[g:GetSnipFileFT()].allTemplates
-		toSnip = get(xt, a:1)
+		let toSnip = get(xt, a:1)
 		if toSnip is 0
 			return ""
 		endif
@@ -546,26 +553,220 @@ fun! s:f.xset(str, ...)
 	endif
 	return res
 endfunction
-fun! s:f.mergeGS(query)
+fun! s:f.Setting(query)
+	let query = type(a:query) == type("") ? {a:query : 1} : a:query
+	let xptObj = b:xptemplateData
+	let rSo = deepcopy(xptObj.renderContext.snipObject)
+	call g:MyMergeSSetting(rSo.setting, query)
+	let xptObj.renderContext.snipObject = rSo
+	let xptObj.renderContext.snipSetting = copy(xptObj.renderContext.snipObject.setting)
+endfunction
+fun! s:f.SettingK(name)
 	let xptObj = b:xptemplateData
 	let xt = xptObj.filetypes[g:GetSnipFileFT()].allTemplates
+	let toSnip = get(xt, a:name)
+	if toSnip is 0
+		return
+	endif
+	"echom string(toSnip.setting)
 	let rSo = deepcopy(xptObj.renderContext.snipObject)
-	call g:MyMergeSSetting(rSo.setting, a:query)
+	call g:MyMergeSetting(rSo.setting, toSnip.setting)
 	let xptObj.renderContext.snipObject = rSo
-	let xptObj.renderContext.snipObject.setting = copy(xptObj.renderContext.snipObject.setting)
+	let xptObj.renderContext.snipSetting = copy(xptObj.renderContext.snipObject.setting)
 endfunction
-let s:f.dict = {
-	\ "blaq" : "$name",
-	\ "fut"  : "$name\n\n\n$scholl"
-	\}
+fun! s:f.getVariables(...)
+	let a1 = [""]
+	let a = []
+	let variables = {}
+	if a:0 > 0
+		if type(a:1) == type("")
+			if a:1[0] != "$"
+				let a1 = [a:1]
+			else
+				let a = [a:1]
+			endif
+		else
+			if a:1[0][0] != "$"
+				let a1 = a:1
+			else
+				let a = a:1
+			endif
+		endif
+		if (a:0 == 2)
+			let a = (type(a:2) == type("")) ? [a:2] : a:2
+		endif
+	endif
+	for snip in a1
+		call extend(variables, self.snipGS({snip : "variables"}), "force")
+	endfor
+	let variables = xpt#util#RemoveDuplicateFrom(keys(variables), a)
+	let newv = []
+	for a in variables
+		if a[0] == "$" && !(a =~ '\V\^$_\.\*_\$')
+				call add(newv, a[1:])
+		endif
+	endfor
+	"return self.Choose(newv)
+	return self.NextC(self.pickL(newv))
+endfunction
+fun! s:f.getVariablesPost(var, ...)
+	if a:var =~ '\V\.\+!!\$'
+		return '`' . a:var[1:] . '^'
+	endif
+	let vars = {}
+	if a:0 == 1
+		let snips =  (type(a:1) == type("")) ? [a:1] : a:1
+		for snip in snips
+			if snip == ""
+				call extend(vars, b:xptemplateData.renderContext.snipObject.setting.variables, "force")
+			else
+				let toSnip = get(b:xptemplateData.filetypes[g:GetSnipFileFT()].allTemplates, snip)
+				if toSnip is 0
+					continue
+				else
+					call extend(vars, toSnip.setting.variables, "force")
+				endif
+			endif
+		endfor
+	else
+		let vars = b:xptemplateData.renderContext.snipObject.setting.variables
+	endif
+	return (has_key(vars, a:var)) ? vars[a:var] : self.V()
+endfunction
+fun! s:f.RIE( expected, retval, ...)
+	let [v, expected, retval] =  (a:0 == 2) ? ([a:expected, a:retval, a:1]) : ([self.V0(), a:expected, a:retval])
+	let expected = (type(expected) == type("")) ? [expected] : expected
+	if a:0 > 0
+		return index(expected, v) != -1 ? retval : a:000[-1]
+	else
+		return index(expected, v) != -1 ? retval : self.V()
+	endif		
+endfunction
+fun! s:f.RINE( expected, retval, ... )
+	let [v, expected, retval] =  a:0 == 2 ? [a:expected, a:retval, a:1] : [self.V0(), a:expected, a:retval]
+	let expected = (type(expected) == type("")) ? [expected] : expected
+	if a:0 > 0
+		return index(expected, v) == -1 ? retval : a:000[-1]
+	endif 
+		return index(expected, v) == -1 ? retval : self.V()
+	endif
+endfunction
+fun! s:f.ChainX(...)
+	if a:0 != 0
+		let codes = (type(a:1) == type([])) ? a:1 : a:000
+		for code in codes
+			let result = (type(code) == type("")) ? self.XS(code) : code
+		endfor
+		return result
+	endif
+endfunction
+fun! s:f.ChainZ(...)
+	if a:0 != 0
+		let codes = (type(a:1) == type([])) ? a:1 : a:000
+		for code in codes
+			let result = (type(code) == type("")) ? self.ZS(code) : code
+		endfor
+		return result
+	endif
+endfunction
+fun! s:f.BreakPick(str, pos, ...)
+	let l = ''
+	if type(a:str) == type("")
+		let str = {"":a:str}
+	else
+		let str =  a:str
+	endif
+	let nonEscaped = '\%(' .     '\%(\[^\\]\|\^\)' .     '\%(\\\\\)\*' . '\)' . '\@<='
+	for [k, v] in items(str)
+		let l .= get(self.snipGS({k : "variables"}), v, ""). "\n"
+	endfor
+	let l = split(l, "\n")
+	let d = {}
+	for s in l
+		if s == ""
+			continue
+		endif
+		let key = matchstr(s, '\V\[^=]\*\ze=')
+		if key == ''
+			let d[s] = s
+		else
+			if key[-1:-1] == "\\"
+				let rkey = key
+				while key[-1:-1] == "\\"
+					let mres = "=" . matchstr(s[len(key)+1:],  '\V\[^=]\*\ze=')
+					let rkey = rkey[:-2] . mres
+					let key .= "=" . mres
+				endwhile
+				let key = rkey
+			endif
+			let val = matchstr(s, '\V'. nonEscaped.'=\s\*\zs\.\*')
+			let val = substitute(val, '\\n', "\n", 'g')
+			let d[key] = val
+		endif
+	endfor
+	if a:pos == "def"
+		return self.Choose(keys(d))
+		"return self.NextC(self.pickL(keys(d)))
+	else
+		return (has_key(d, a:1)) ? d[a:1] : self.V()
+	endif
+endfunction
+fun! s:f.Restrict(limit)
+	let typed = self.V()
+	let len = len(typed)
+	if len >= a:limit
+		return {"text" : typed[0: -1 + a:limit - len]}
+	else
+		return 0
+	endif
+endfunction
+fun! s:f.AlignR(arg, ...)
+	let le = (a:0 == 1) ? a:1 : "_"
+	let t = self.V()
+	let l = len(t)
+	if l <= a:arg
+		let text = repeat(le, a:arg - l) . t
+	elseif l > a:arg
+		let text = t[l - a:arg:]
+	endif
+	return {"text":text}
+endfunction
+fun! s:f.AlignL(arg, ...)
+	let le = (a:0 == 1) ? a:1 : "_"
+	let l = len(self.V())
+	if l <= a:arg
+		let text = repeat(le, a:arg - l)
+	else
+		let text = ""
+	endif
+	return {"text":text}
+endfunction
+fun! s:f.Text(arg, ...)
+	let a = (a:0 == 1) ? a:1 : {}
+	return extend({"action" : "text", "text" : a:arg}, a, "force")
+endfunction
+fun! s:f.FilterText(arg, ...)
+	let [name, fil, snip] = [a:arg, "defaultValues", ""]
+	if a:0 == 1
+		let fil = a:1
+	elseif a:0 == 2
+		let snip =  a:arg
+		let name = a:1
+		let fil = a:2
+	endif
+	return self.snipGS({snip:{fil:{name:"text"}}})
+endfunction
 
-XPT test
-XSETm $name
-dlksllssll
-dlldldd
-XSETm END
-XSETm $scholl
-fedxknsbks
-xkjssuni
-XSETm END
-`choose^Z(xset(pickL(GetVar("dict"))))^
+
+XPT _chooseXSET hidden
+XSET _chooseXSET.pre=_chooseXSET
+XSET _chooseXSET.def=getVariables()
+XSET _chooseXSET.post=getVariablesPost("$".V())
+`_chooseXSET^
+
+XPT p
+XSET name=tope
+
+XPT t
+XSET name=alex
+`MergeSSetting("p")

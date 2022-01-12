@@ -160,7 +160,6 @@ fun! XPTemplateSetting(name,toWhich,setting, snip)
 	endif
 	let xt[a:name] = { 'name':a:name, 'parsed':0, 'ftScope':ftScope, 'snipText':snip, 'priority':prio, 'setting':setting, 'ptn':deepcopy(b:xptemplateData.snipFileScope.ptn), }
 	call s:UpdateNamePrefixDict(ftScope,a:name)
-	"call s:ParseTemplateSetting(xt[a:name])
 	call s:InitTemplateObject(xptObj,xt[a:name])
 	if get( xt[ name ].setting, 'abbr', 0 )
 		call s:Abbr(name)
@@ -305,7 +304,8 @@ fun! s:DoInclude(tmplDict,tmplObject,pattern,keepCursor)
 			let incTmplObject = a:tmplDict[incName]
 			call s:ParseSnippet(incTmplObject,incTmplObject.ftScope)
 			if toForce
-				silent! let dcopy = deepcopy(a:tmplObject)
+				"silent! let dcopy = deepcopy(a:tmplObject)
+				let dcopy = a:tmplObject
 				call s:MergeSettingForce(dcopy.setting, incTmplObject.setting)
 				let b:xptemplateData.renderContext.snipObject = dcopy
 				let b:xptemplateData.renderContext.snipSetting = copy(b:xptemplateData.renderContext.snipObject.setting)
@@ -424,6 +424,8 @@ fun! s:ParseTemplateSetting(tmpl)
 	if type( get( setting, 'wraponly', 0 ) ) == type( '' )
 		let setting.wrap = setting.wraponly
 		let setting.wraponly = 1
+	elseif has_key( setting, 'wraponly') && setting.wraponly is 1
+		let setting.wrap = 1
 	endif
 	let setting.iswrap = has_key( setting, 'wrap' )
 	let setting.wraponly = get( setting, 'wraponly', 0 )
@@ -903,7 +905,7 @@ fun! g:MyMergeSSetting(thisSetting, query )
 	let xptObj = b:xptemplateData
 	let xt = xptObj.filetypes[g:GetSnipFileFT()].allTemplates
 	let setting = deepcopy(g:XPTemplateSettingPrototype)
-	for [super, sett] in items(a:query)
+	for [super, sett] in items(a:query) " {super:sett, ...}
 		let toSnip = get(xt,super)
 		if toSnip is 0
 			if super == "" || super == g:_MyCurParseSnip.name
@@ -915,24 +917,24 @@ fun! g:MyMergeSSetting(thisSetting, query )
 		if type(sett) != type({})
 			let curr = deepcopy(toSnip.setting)
 			let thiscurr = setting
-			if type(sett) == type(0)
+			if type(sett) == type(0) " {super : 1}
 				call xpt#util#DeepExtend(thiscurr, curr)
 				continue
 			endif
 			if type(sett) == type('')
 				let sett = [sett]
 			endif
-			for namee in sett
+			for namee in sett " {super : [namee, ...]}
 				if stridx(namee, "|") == -1
 					let currname = ""
-				else
+				else " {super : [namee|currname, ...]
 					let currsplit = split(namee, "|")
 					let namee = currsplit[0]
 					let currname = currsplit[1]
 				endif
 				if namee =~ '\V\^$\w\+\$'
 					if currname != ""
-						let thiscurr.variables[currname] = curr.variables[namee]
+						let thiscurr.variables[currname] = curr.variables[namee] "Renames to new variable
 					else
 						let thiscurr.variables[namee] = curr.variables[namee]
 					endif
@@ -942,9 +944,9 @@ fun! g:MyMergeSSetting(thisSetting, query )
 						if has_key(curr[name], namee)
 							if currname != ""
 								if currname =~ '\V\^$\w\+\$'
-									let thiscurr.variables[currname] = curr[name][namee]
+									let thiscurr.variables[currname] = curr[name][namee] "Saves it in a variable
 								else
-									let thiscurr[name][currname] = curr[name][namee]
+									let thiscurr[name][currname] = curr[name][namee] "Renames to new placeholder
 								endif
 							else
 								let thiscurr[name][namee] = curr[name][namee]
@@ -954,10 +956,10 @@ fun! g:MyMergeSSetting(thisSetting, query )
 				endif
 			endfor
 		else
-			for [namee, listt] in items(sett)
+			for [namee, listt] in items(sett) "{super:{namee:listt, ...}, ...} 
 				if stridx(namee, "|") == -1
 					let currname = ""
-				else
+				else "{super:{namee|currname:listt, ...}, ...}
 					let currsplit = split(namee, "|")
 					let namee = currsplit[0]
 					let currname = currsplit[1]
@@ -965,30 +967,44 @@ fun! g:MyMergeSSetting(thisSetting, query )
 				if namee == "allValues"
 					let sets = ["preValues","defaultValues","postFilters", "ontypeFilters"]
 					let listt = type(listt) == type("") ? [listt] : listt
-					for setss in sets
+					for setss in sets 
 						let curr = deepcopy(toSnip.setting)[setss]
 						let thiscurr = setting[setss]
-						for istt in listt
+						for istt in listt "{super:{allValues|currname:[istt, ...]}, ...}
+							if stridx(istt, "|") == -1
+								let currnameistt = ""
+							else "{super:{allValues|currname:[istt|currnameistt, ...]}, ...}
+								let currsplitistt = split(istt, "|")
+								let istt = currsplitistt[0]
+								let currnameistt = currsplitistt[1]
+							endif
 							if has_key(curr, istt)
-								if has_key(thiscurr, istt)
-									if currname != ""
-										if has_key(thiscurr, currname)
-											call xpt#util#DeepExtend(thiscurr[currname], curr[istt])
-										else
-											let thiscurr[currname] = curr[istt]
-										endif
+								if currname != ""
+									if has_key(thiscurr, currname)
+										call xpt#util#DeepExtend(thiscurr[currname], curr[istt])
 									else
-										call xpt#util#DeepExtend(thiscurr[istt], curr[istt])
+										let thiscurr[currname] = curr[istt]
+									endif
+									if currnameistt != ""
+										if has_key(thiscurr, currnameistt)
+											call xpt#util#DeepExtend(thiscurr[currnameistt], curr[istt])
+										else
+											let thiscurr[currnameistt] = curr[istt]
+										endif
 									endif
 								else
-									if currname != ""
-										if has_key(thiscurr, currname)
-											call xpt#util#DeepExtend(thiscurr[currname], curr[istt])
+									if currnameistt != ""
+										if has_key(thiscurr, currnameistt)
+											call xpt#util#DeepExtend(thiscurr[currnameistt], curr[istt])
 										else
-											let thiscurr[currname] = curr[istt]
+											let thiscurr[currnameistt] = curr[istt]
 										endif
 									else
-										let thiscurr[istt] = curr[istt]
+										if has_key(thiscurr, istt)
+											call xpt#util#DeepExtend(thiscurr[istt], curr[istt])
+										else
+											let thiscurr[istt] = curr[istt]
+										endif
 									endif
 								endif
 							endif
@@ -1033,18 +1049,41 @@ fun! g:MyMergeSSetting(thisSetting, query )
 						let setting.variables[currname] = curr[listt[0]]
 						continue
 					endif
-					for istt in listt
+					for istt in listt "{super:{namee|currname:[istt, ...]}, ...}
+						if stridx(istt, "|") == -1
+							let currnameistt = ""
+						else "{super:{namee|currname:[istt|currnameistt, ...]}, ...}
+							let currsplitistt = split(istt, "|")
+							let istt = currsplitistt[0]
+							let currnameistt = currsplitistt[1]
+						endif
 						if type(curr) == type({})
 							if has_key(thiscurr, istt)
-								call xpt#util#DeepExtend(thiscurr[istt], curr[istt])
+								if currnameistt == ""
+									call xpt#util#DeepExtend(thiscurr[istt], curr[istt])
+								else
+									let thiscurr[currnameistt] = curr[istt]
+								endif
 							else
-								let thiscurr[istt] = curr[istt]
+								if currnameistt == ""
+									let thiscurr[istt] = curr[istt]
+								else
+									let thiscurr[currnameistt] = curr[istt]
+								endif
 							endif
 						elseif type(curr) == 3
 							if has_key(thiscurr,istt)
-								call extend(thiscurr[istt], curr[istt])
+								if currnameistt == ""
+									call extend(thiscurr[istt], curr[istt])
+								else
+									let thiscurr[currnameistt] = curr[istt]
+								endif
 							else
-								let thiscurr[istt] = curr[istt]
+								if currnameistt == ""
+									let thiscurr[istt] = curr[istt]
+								else
+									let thiscurr[currnameistt] = curr[istt]
+								endif
 							endif
 						else
 							let thiscurr[istt] = curr[istt]
@@ -1529,6 +1568,8 @@ fun! s:BuildPlaceHolders(markRange)
 			let renderContext.item = item
 			if renderContext.leadingPlaceHolder == s:nullDict
 				let renderContext.leadingPlaceHolder = item.keyPH == s:nullDict ? placeHolder : item.keyPH
+			else
+				let renderContext.leadingPlaceHolder = item.keyPH == s:nullDict ? renderContext.leadingPlaceHolder : item.keyPH
 			endif
 			"let renderContext.leadingPlaceHolder = (item.keyPH == s:nullDict) ? placeHolder : item.keyPH
 			call s:EvaluateEdge(xp,item,placeHolder)
@@ -1790,8 +1831,16 @@ fun! s:ApplyPreValues(placeHolder)
 	let setting = rctx.snipSetting
 	let name = a:placeHolder.name
 	let preValue = name == '' ? g:EmptyFilter : get(setting.preValues,name,g:EmptyFilter)
+	if preValue is g:EmptyFilter && name != ''
+		let pres = s:GetContextFTObj().setting.preValues
+		let preValue = get(pres, name, g:EmptyFilter)
+	endif
 	if preValue is g:EmptyFilter
 		let preValue = get( a:placeHolder, 'ontimeFilter', get(setting.defaultValues,name,g:EmptyFilter))
+	endif
+	if preValue is g:EmptyFilter && name != ''
+		let defs = s:GetContextFTObj().setting.defaultValues
+		let preValue = get(defs, name, g:EmptyFilter)
 	endif
 	if preValue is g:EmptyFilter
 		return
@@ -1891,7 +1940,8 @@ fun! s:ShiftForward(action)
 		if XPPhasSession()
 			call XPPend()
 		endif
-		return s:close_pum . "\<C-r>" . '=XPTforceForward(' . string( a:action ) . ")\<CR>"
+		"return s:close_pum . "\<C-r>" . '=XPTforceForward(' . string( a:action ) . ")\<CR>"
+		return "\<C-r>" . '=XPTforceForward(' . string( a:action ) . ")\<CR>"
 	endif
 endfunction
 fun! XPTforceForward(action)
@@ -1908,6 +1958,9 @@ fun! XPTforceForward(action)
 endfunction
 fun! s:FinishCurrent(action)
 	let renderContext = b:xptemplateData.renderContext
+	if renderContext.leadingPlaceHolder == {}
+		return 0
+	endif
 	let marks = renderContext.leadingPlaceHolder.mark
 	call s:CleanupCurrentItem()
 	let rc = s:XPTupdate()
@@ -1915,10 +1968,10 @@ fun! s:FinishCurrent(action)
 		return -1
 	endif
 	let name = renderContext.item.name
+	"echom "Applying Post filters
 	if a:action ==# 'clear'
 		call XPreplace(XPMpos( marks.start ),XPMpos( marks.end ), '')
 	endif
-	"echom "Applying Post filters"
 	let [post,built] = s:ApplyPostFilter()
 	"echom "[post]=" . post . "[built]=" . built
 	if name != ''
@@ -1956,6 +2009,10 @@ fun! s:ApplyPostFilter()
 		let rctx.namedStep[rctx.item.name] = typed
 	endif
 	let groupPostFilter = get(posts,name,g:EmptyFilter)
+	if groupPostFilter == g:EmptyFilter
+		let postss = s:GetContextFTObj().setting.postFilters
+		let groupPostFilter = get(postss, name, g:EmptyFilter)
+	endif
 	let leaderPostFilter = get( leader, 'postFilter', g:EmptyFilter )
 	let filter = groupPostFilter is g:EmptyFilter ? leaderPostFilter : groupPostFilter
 	let hadBuilt = 0
@@ -1965,7 +2022,7 @@ fun! s:ApplyPostFilter()
 		let marks = rctx.leadingPlaceHolder[mark_name]
 		let ori_flt_rst = copy(flt_rst)
 		call XPMsetLikelyBetween(marks.start,marks.end)
-		if flt_rst.rc != 0
+		if flt_rst.rc != 0 && typed != ""
 			let [start,end] = XPMposStartEnd(marks)
 			if has_key(flt_rst, 'action') && flt_rst.action ==# 'pum'
 				call XPreplace(start,end,tlib#input#List("s"," ".leader.name."->".marks.start,flt_rst.pum))
@@ -1977,7 +2034,8 @@ fun! s:ApplyPostFilter()
 					call XPreplace(start, end, '')
 				endif
 				call XPMsetLikelyBetween(marks.start,marks.end)
-				call feedkeys(XPTemplateStart(0, {'startPos' : getpos(".")[1:2], 'tmplName' : flt_rst.tmplName}), 'n')
+				call XPTemplateStart(0, {'startPos' : getpos(".")[1:2], 'tmplName' : flt_rst.tmplName})
+				call feedkeys(s:ShiftForward(''), 'n')
 				let hadBuilt = 2
 			elseif has_key( flt_rst, 'text' )
 				if flt_rst.text !=# typed
@@ -1999,7 +2057,7 @@ fun! s:ApplyPostFilter()
 			endif
 		endif
 	endif
-	if groupPostFilter is g:EmptyFilter
+	if groupPostFilter is g:EmptyFilter || typed == ""
 		call s:UpdateFollowingPlaceHoldersWith(typed,{})
 		return [typed,hadBuilt]
 	else
@@ -2111,7 +2169,8 @@ fun! s:HandleDefaultValueAction(flt_rst)
 			call XPreplace(start, end, '')
 		endif
 		call XPMsetLikelyBetween(marks.start,marks.end)
-		return XPTemplateStart(0, {'startPos' : getpos(".")[1:2], 'tmplName' : a:flt_rst.tmplName})
+		call XPTemplateStart(0, {'startPos' : getpos(".")[1:2], 'tmplName' : a:flt_rst.tmplName})
+		call s:ShiftForward('')
 	elseif a:flt_rst.action ==# 'pum'
 		return s:DefaultValuePumHandler(rctx,a:flt_rst)
 	elseif a:flt_rst.action ==# 'finishTemplate'
@@ -2149,7 +2208,7 @@ fun! s:HandleDefaultValueAction(flt_rst)
 			return ''
 		endif
 	endif
-	if rctx.phase == "fillin"
+	if index(["fillin"], rctx.phase) != -1
 		call XPMupdateStat()
 		return ""
 	else
@@ -2210,7 +2269,7 @@ fun! s:FillinLeader(flt_rst)
 		return s:NONE
 	endif
 	if has_key( a:flt_rst, 'text' )
-		"call xpt#settingswitch#Switch(b:xptemplateData.settingWrap)
+		call xpt#settingswitch#Switch(b:xptemplateData.settingWrap)
 		let text = s:IndentFilterText(a:flt_rst,s)
 		call XPreplace(s,e,text)
 	endif
@@ -2287,6 +2346,10 @@ fun! s:ApplyDefaultValue()
 		let filter = defs[leader.name]
 	else
 		let filter = get( leader, 'ontimeFilter', get(defs,leader.name, g:EmptyFilter))
+		if filter is g:EmptyFilter
+			let defs = s:GetContextFTObj().setting.defaultValues
+			let filter = get(defs,leader.name, g:EmptyFilter)
+		endif
 	endif
 	if filter is g:EmptyFilter
 		call s:XPTupdate()
@@ -2302,8 +2365,6 @@ fun! s:ApplyDefaultValue()
 		let flt_rst.nav = "cancel"
 	elseif has_key(flt_rst, "fromNext")
 		let flt_rst.nav = "next"
-	else
-		let flt_rst.nav = "stay"
 	endif
 	return s:HandleDefaultValueAction(flt_rst)
 endfunction
@@ -2403,7 +2464,8 @@ fun! s:SelectCurrent()
 		if &selectmode =~ 'cmd'
 			call feedkeys( "\<esc>gv", 'nt' )
 		else
-			call feedkeys( "\<esc>gv\<C-g>", 'nt' )
+			"call feedkeys( "\<esc>gv\<C-g>", 'nt' )
+			call feedkeys( "\<esc>gv\<C-g>", 'n' )
 		endif
 		call XPMupdateStat()
 		return ''
@@ -2447,6 +2509,9 @@ endfunction
 fun! s:Goback()
 	let renderContext = b:xptemplateData.renderContext
 	return s:SelectCurrent()
+endfunction
+fun! g:Goback()
+	call s:Goback()
 endfunction
 fun! s:XPTinitMapping()
 	let literal_chars = '' . 'abcdefghijklmnopqrstuvwxyz' . 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' . '1234567890' . '!@#$%^&*()' . '`~-_=+[{]}\;:"'',<.>/?'
@@ -2546,8 +2611,11 @@ fun! s:SynNameStack(l,c)
 		return [synIDattr( synID( a:l, a:c, 0 ), "name" )]
 	endif
 endfunction
-fun! s:UpdateFollowingPlaceHoldersWith(contentTyped,option)
+fun! s:oldUpdateFollowingPlaceHoldersWith(contentTyped,option)
 	let renderContext = b:xptemplateData.renderContext
+	if renderContext.item == {}
+		return
+	endif
 	let useGroupPost = renderContext.phase == 'post' && has_key( a:option, 'post' )
 	if useGroupPost
 		let group_flt_rst = a:option.post
@@ -2582,7 +2650,6 @@ fun! s:UpdateFollowingPlaceHoldersWith(contentTyped,option)
 		"	call feedkeys( postaction, 'n' )
 		"endif
 	endfor
-	"echom string(renderContext.itemList)
 	let renderContext.itemList = renderContext.firstList + renderContext.itemList + renderContext.lastList
 	"echom "-------------------" . string(renderContext.itemList)
 	let renderContext.firstList = []
@@ -2591,7 +2658,44 @@ fun! s:UpdateFollowingPlaceHoldersWith(contentTyped,option)
 	let [renderContext.item,renderContext.leadingPlaceHolder] = current1
 	call XPMsetLikelyBetween(renderContext.leadingPlaceHolder.mark.start, renderContext.leadingPlaceHolder.mark.end)
 endfunction
-fun! s:MyOwnHandler(flt_rst, ph, contentTyped  ) "{{{
+fun! s:UpdateFollowingPlaceHoldersWith(contentTyped,option)
+	let renderContext = b:xptemplateData.renderContext
+	if renderContext.item == {}
+		return
+	endif
+	let useGroupPost = renderContext.phase == 'post' && has_key( a:option, 'post' )
+	if useGroupPost
+		let group_flt_rst = a:option.post
+	endif
+	let phList = renderContext.item.placeHolders
+	"let current1 = [renderContext.item,renderContext.leadingPlaceHolder]
+	try
+		for ph in phList
+			"let renderContext.leadingPlaceHolder = ph
+			"call XPMsetLikelyBetween(ph.mark.start, ph.mark.end)
+			let flt = renderContext.phase == 'post' ? get( ph, 'postFilter', get( ph, 'ontimeFilter',  g:EmptyFilter ) ) : get( ph, 'ontimeFilter', g:EmptyFilter )
+			let phStartPos = XPMpos(ph.mark.start)
+			let [phln,phcol] = phStartPos
+			if flt isnot g:EmptyFilter
+				let flt_rst = s:EvalFilter(flt,[ renderContext.ftScope.funcs, renderContext.snipSetting.variables, { '$UserInput' : a:contentTyped } ] )
+			elseif useGroupPost
+				let flt_rst = copy(group_flt_rst)
+			else
+				let flt_rst = { "rc": 1, 'nIndent': -XPT#getIndentNr( phln, phcol ), 'text':a:contentTyped }
+			endif
+			let postaction = s:MyOwnHandler(flt_rst, ph)
+			if '' != postaction
+				call feedkeys( postaction, 'n' )
+			endif
+		endfor
+	catch /.*/
+		call XPT#error(v:exception)
+	finally
+		"let [renderContext.item,renderContext.leadingPlaceHolder] = current1
+		"call XPMsetLikelyBetween(renderContext.leadingPlaceHolder.mark.start, renderContext.leadingPlaceHolder.mark.end)
+	endtry
+endfunction
+fun! s:MyOwnHandler(flt_rst, ph) "{{{
 	let renderContext = b:xptemplateData.renderContext
 	let flt_rst = a:flt_rst
 	let ph = a:ph
@@ -2609,15 +2713,12 @@ fun! s:MyOwnHandler(flt_rst, ph, contentTyped  ) "{{{
 		elseif has_key(flt_rst,'action') &&  flt_rst.action ==# 'finishTemplate'
 			call s:ActionFinish(renderContext,flt_rst)
 		elseif has_key( flt_rst, 'text' )
-			let flttext = s:IndentFilterText(flt_rst, start)
+			let flttext = s:IndentFilterText(flt_rst,start)
 			let text = xpt#util#TextBetween([start, end])
-			if mark_name == 'mark'
-			    call s:RemoveEditMark(ph)
-			endif
-			if (text !=# flttext) && ((renderContext.phase == "post") || (renderContext.phase == "fillin"))
-				let fpos =  XPreplace(start,end,flttext)
-			"elseif (text !=# a:contentTyped) && ((renderContext.phase == "post") || (renderContext.phase == "fillin"))
-			"	let fpos =  XPreplace(start,end,a:contentTyped)
+			if text !=# flttext
+				call XPRstartSession()
+				call XPreplaceByMarkInternal(marks.start,marks.end,flttext)
+				call XPRendSession()
 			endif
 			if has_key(flt_rst,'action') && flt_rst.action ==# 'build'
 				let renderContext.activeLeaderMarks = 'mark'
@@ -2640,6 +2741,7 @@ fun! s:MyOwnHandler(flt_rst, ph, contentTyped  ) "{{{
 		"	endif
 		"endif
 	endif
+	return ""
 endfunction "}}}
 fun! s:Crash(...)
 	let msg = "XPTemplate session ends: " . join( a:000, "\n" )
@@ -2684,12 +2786,14 @@ fun! s:HandleOntypeFilter(filter)
 	if 0 is flt_rst.rc
 		return
 	endif
+	echom string(flt_rst)
 	if has_key( flt_rst, 'action' )
 		call s:HandleOntypeAction(renderContext,flt_rst)
 	endif
 endfunction
 fun! s:HandleOntypeAction(renderContext,flt_rst)
-	let postaction = s:HandleAction(a:flt_rst)
+	let postaction = s:HandleDefaultValueAction(a:flt_rst)
+	echom postaction
 	if '' != postaction
 		call feedkeys( postaction, 'n' )
 	endif
@@ -2718,9 +2822,6 @@ fun! s:HandleMapAction(flt_rst)
 		endif
 	endif
 	return postaction
-endfunction
-fun! s:HandleAction(flt_rst)
-	return s:HandleDefaultValueAction(a:flt_rst)
 endfunction
 fun! s:IsUpdateCondition(renderContext)
 	if a:renderContext.phase == 'uninit'
@@ -2753,7 +2854,7 @@ fun! s:UpdateMarksAccordingToLeaderChanges(renderContext)
 			elseif g:xptemplate_strict == 1
 				undo
 				call XPMupdate()
-				call XPT#warn( "editing OUTSIDE place holder is not allowed whne g:xptemplate_strict=1, use " . g:xptemplate_goback . " to go back" )
+				"call XPT#warn( "editing OUTSIDE place holder is not allowed whne g:xptemplate_strict=1, use " . g:xptemplate_goback . " to go back" )
 				return g:XPT_RC.canceled
 			else
 			endif

@@ -4,7 +4,7 @@ set cpo-=< cpo+=B
 let s:log = xpt#debug#Logger( 'warn' )
 exec XPT#importConst
 fun! xpt#snipfile#New(filename)
-  let r = { 'filename':a:filename, 'ptn':xpt#snipfile#GenPattern( {'l':'`', 'r':'^'} ), 'priority':xpt#priority#Get('default'), 'filetype':'', 'inheritFT':0, }
+  let r = { 'filename':a:filename, 'ptn':xpt#snipfile#GenPattern( {'l':'`', 'r':'^'} ), 'priority':xpt#priority#Get('default'), 'filetype':'', 'inheritFT':0}
   return r
 endfunction
 fun! xpt#snipfile#Push()

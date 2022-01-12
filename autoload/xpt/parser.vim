@@ -158,11 +158,34 @@ fun! xpt#parser#CompileSnippet(lines)
 	endfor
 	if has_key(setting, 'text')
 		let snippetLinesOld = join(snippetLines, "\n")
-		let snippetLines = ''
+		if setting.text[:1] == "||"
+			let snippetLines = "\n"
+		else
+			let snippetLines = ''
+		endif
 		for ssnip in split(setting.text, '|')
-			let snippetLines .= b:xptemplateData.filetypes[b:xptemplateData.snipFileScope.filetype].allTemplates[ssnip].snipText
+			if ssnip == ""
+				let snippetLines .= "\n"
+			else
+				let snippetLines .= b:xptemplateData.filetypes[b:xptemplateData.snipFileScope.filetype].allTemplates[ssnip].snipText
+			endif
 		endfor
 		let snippetLines .= snippetLinesOld
+	endif
+	if has_key(setting, 'texta')
+		if type(snippetLines) == type([])
+			let snippetLines = join(snippetLines, "\n")
+		endif
+		if setting.texta[:1] == "||"
+			let snippetLines .= "\n"
+		endif
+		for ssnip in split(setting.texta, '|')
+			if ssnip == ""
+				let snippetLines .= "\n"
+			else
+				let snippetLines .= b:xptemplateData.filetypes[b:xptemplateData.snipFileScope.filetype].allTemplates[ssnip].snipText
+			endif
+		endfor
 	endif
 	call xpt#st#Simplify(setting)
 	if has_key( setting, 'alias' )
@@ -221,6 +244,19 @@ fun! xpt#parser#SnipSet(dictNameValue)
 	let name = matchstr( nameValue, '^.\{-}\ze=' )
 	let value = nameValue[len(name) + 1 :]
 	let snipScope[dict][name] = value
+endfunction
+fun! xpt#parser#XPTset(dictNameValue)
+	let x = b:xptemplateData
+	let ftScope = x.filetypes[x.snipFileScope.filetype]
+	let two = split( a:dictNameValue, '\V.', 1 )
+	let [ dict, nameValue ] = split( a:dictNameValue, '\V.', 1 )
+	let name = matchstr( nameValue, '^.\{-}\ze=' )
+	let value = nameValue[len(name) + 1 :]
+	let priority = x.snipFileScope.priority
+	if !has_key(ftScope.varPriority,name) || priority <= ftScope.varPriority[name]
+		call s:HandleXSETcommandOld(ftScope.setting, "XPTset", dict, name, value)
+		let ftScope.varPriority[dict] = priority
+	endif
 endfunction
 fun! xpt#parser#loadSpecialFiletype(ft)
 	let x = b:xptemplateData
@@ -566,11 +602,34 @@ fun! s:XPTemplateParseSnippet(lines)
 	let setting.fromXPT = 1
 	if has_key(setting, 'text')
 		let snippetLinesOld = join(snippetLines, "\n")
-		let snippetLines = ''
+		if setting.text[:1] == "||"
+			let snippetLines = "\n"
+		else
+			let snippetLines = ''
+		endif
 		for ssnip in split(setting.text, '|')
-			let snippetLines .= b:xptemplateData.filetypes[b:xptemplateData.snipFileScope.filetype].allTemplates[ssnip].snipText
+			if ssnip == ""
+				let snippetLines .= "\n"
+			else
+				let snippetLines .= b:xptemplateData.filetypes[b:xptemplateData.snipFileScope.filetype].allTemplates[ssnip].snipText
+			endif
 		endfor
 		let snippetLines .= snippetLinesOld
+	endif
+	if has_key(setting, 'texta')
+		if type(snippetLines) == type([])
+			let snippetLines = join(snippetLines, "\n")
+		endif
+		if setting.texta[:1] == "||"
+			let snippetLines .= "\n"
+		endif
+		for ssnip in split(setting.texta, '|')
+			if ssnip == ""
+				let snippetLines .= "\n"
+			else
+				let snippetLines .= b:xptemplateData.filetypes[b:xptemplateData.snipFileScope.filetype].allTemplates[ssnip].snipText
+			endif
+		endfor
 	endif
 	for [keyy, vall] in items(setting.variables)
 		if type(vall) == type('')
@@ -629,7 +688,8 @@ fun! s:GetSnipCommentHint(str)
 endfunction
 fun! s:GetXSETkeyAndValue(lines,start, setting)
 	let start = a:start
-	let XSETparam = matchstr(a:lines[start], '\V\^XSET\%[m]\s\+\zs\.\*')
+	let XSETparam = matchstr(a:lines[start], '\V\^XSET\%[m]\s\zs\.\*')
+	"let XSETparam = matchstr(a:lines[start], '\V\^XSET\%[m]\s\+\zs\.\*')
 	let isMultiLine = a:lines[ start ] =~# '\V\^XSETm'
 	if isMultiLine
 		let key = XSETparam
@@ -767,7 +827,10 @@ fun! s:HandleXSETcommandOld(setting,command,keyname,keytype,value)
 			endfor
 		endif
 	elseif a:keytype == "" || a:keytype ==# 'def'
-		let a:setting.defaultValues[a:keyname] = xpt#flt#New(0,a:value)
+		if type(a:value) == type('')
+				let val = g:MyParseRepetition(b:xptemplateData.snipFileScope, a:setting.postFilters, a:value)
+				let a:setting.defaultValues[a:keyname] = xpt#flt#New(0, g:MyParseQuotedPostFilter(b:xptemplateData.snipFileScope, a:setting.postFilters, { 'end':'}}', 'start':'{{' }, val))
+		endif
 	elseif a:keytype ==# 'map'
 		let a:setting.mappings[a:keyname] = get( a:setting.mappings, a:keyname, { 'saver' : xpt#msvr#New(1), 'keys' : {} } )
 		let key = matchstr( a:value, '\V\^\S\+\ze\s' )

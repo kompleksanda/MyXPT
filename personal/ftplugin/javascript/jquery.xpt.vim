@@ -68,7 +68,7 @@ XSET $filter() out obj from wrapper set -- \.filter(function(index){ return $(th
 XSET $find -- \.find('em')\.length=     find\('`selector^')
 XSET $finish=   finish\(`a^)
 XSET $first=first\()
-XSET $focus bind a function to or trigger a focus event -- dialog\.find('#username')\.focus();=focus\(`function^)
+XSET $focus bind a function to or trigger a focus event -- dialog\.find('#username')\.focus();=focus\(`function?^)
 XSET $focusin=  focusin\(`a^, `c^)
 XSET $focusout= focusout\(`a^, `c^)
 XSET $grep jQuery method filter an array-- $\.grep(months, function(value, i) {return ( value\.indexOf('J') \=\= 0 );=grep\(`objarrray^, function (index, item){\n    `cursor^\n})
@@ -140,7 +140,7 @@ XSET $resize calls a function everytime an element is resized -- $(window)\.resi
 XSET $scroll=   scroll\(function (e){\n    `^\n})
 XSET $scrollLeft set or get number of pixels scrolled from left screen -- $(document)\.scrollLeft()=scrollLeft\(`width?^)
 XSET $scrollTop set or get number of pixels scrolled from top screen -- $(document)\.scrollTop()=scrollTop\(`height?^)
-XSET $select bind a function to or trigger a select event=select\(`function^)
+XSET $select bind a function to or trigger a select event=select\(`function?^)
 XSET $selector returns the seletor of an object -- $("div")\.find("a")\.selector; RETURNS "div a"=selector
 XSET $serialize method serializes a set of input elements into a string of data -- $("#testform")\.serialize()=serialize\()
 XSET $serializeArray method serializes all forms and form elements like the \.serialize() method but returns a JSON data structure for you to work with=serializeArray\()
@@ -153,7 +153,7 @@ XSET $slideUp=  slideUp\(`speed^`, `callback?^)
 XSET $sort=     sort\()
 XSET $splice=   splice\()
 XSET $stop stops the current animation, pass true as first parameter to clear all queued animation, true as second parameter to go to end of current animation-- jQuery(this)\.stop()\.animate({opacity:0\.8}, 1000);=stop\(`true^`, `true^)
-XSET $submit bind a function to or trigger a submit event=   submit\(`function^)
+XSET $submit bind a function to or trigger a submit event=   submit\(`function?^)
 XSET $text set and get text=text\(`string?^)
 XSET $toArray=  toArray\()
 XSET $toggle element from visible to hidden=toggle\(`speed^`callback^XS\(\$_toggle_callback_)^)
@@ -179,7 +179,7 @@ XSET $post jQuery Object method loads data from the server using a POST HTTP req
 XPT _jo_load setting=_chooseXSET hidden
 XSET $bind a function to the load event of each matched element=function (e){\n    `^\n}
 XSET $load an external data from the server using AJAX,  [URL] : the url of the server-side resource to which the request is sent\. [data] This optional parameter represents an object whose properties are serialized into properly encoded parameters to be passed to the request\. [callback] A callback function invoked after the response data has been loaded into the elements of the matched set\. \|\|\|\|\|\| [URL] It could be a CGI, ASP, JSP, or PHP script which generates data dynamically or out of a database data\. [data] If specified, the request is made using the POST method\. If omitted, the GET method is used\. [callback] The first parameter passed to this function is the response text received from the server and second parameter is the status code=`URL^
-load(`function^)
+load(`Snippet("_chooseXSET")^)
 
 XPT _css_attr_choose
 XSET attr.pre=attr
@@ -190,12 +190,12 @@ XPT _css setting=_chooseXSET|_css_attr_choose hidden
 XSET $get css attribute value css(a)="`attr^"
 XSET $set single attribute css(a, v)="`attr^", `val^
 XSET $set multiple values css({v : a, \.\.})={"`attr^" : `val^`, `MORE...{{^, "`attr^" : `val^`, `MORE...^`}}^}
-css(`function^)
+css(`Snippet("_chooseXSET")^)
 
 XPT _jo_filter setting=_chooseXSET hidden
 XSET $selector string ""='`:selector:^'
 XSET $function() must return true to keep else false=function (index) {\n    `cursor^\n    return false;\n}
-filter(`function^)
+filter(`Snippet("_chooseXSET")^)
 
 XPT _jo_animate setting=_css_attr_choose hidden
 XSET $_import_={"jobj":{"allValues":"speed","allValues|val":"opacity"}}
@@ -269,15 +269,15 @@ XSET $:text=text
 XSET $:checked=checked
 XSET $:checkbox=checkbox
 
-XPT selector
-XSET $_preValues_={"selector":""}
+XPT selector dyn
+XSET $_preValues_={"selector":" ","tagAttr?":" "}
 XSET $_attr_=ACMB\({'\V\^\zsh\\$':'href',     '\V\^\zsi\\$':'id',
 XSET $_attr_+=      '\V\^\w\+\zs!\\$':'!="',    '\V\^\w\+\zs=\\$':'="',
 XSET $_attr_+=      '\V\^\w\+\zs^\\$':'^="',    '\V\^\w\+\zs$\\$':'$="',
 XSET $_attr_+=      '\V\^\w\+\zs~\\$':'~="',
 XSET $_attr_+=})
 XSET attr.ontype=ZS($_attr_)
-XSET $_tag_=ACMB\({'\V\^\w\+\zs \\$': NextC\()})
+XSET $_tag_=ACMB\({'\V\^\w\+\zs \\$': '` `tagAttr?^'})
 XSET tag.ontype=ZS($_tag_)
 XSET $_tagAttr_=ACMB\({'\V\^\zsi\\$':'id="`text^"` `tagAttr?^',        '\V\^\zsc\\$':'class="`text^"` `tagAttr?^',
 XSET $_tagAttr_+=       '\V\^\zsn\\$':'name="`text^"` `tagAttr?^',        '\V\^\zsv\\$':'value="`text^"` `tagAttr?^',
@@ -292,18 +292,16 @@ XSET $_selector_+=     '\V\.\*\zs:ha\\$':":has(`selector^)`selector?^",  '\V\.\*
 XSET $_selector_+=     '\V\.\*\zs:v\\$':":visible",   '\V\.\*\zs:em\\$':":empty",  '\V\.\*\zs:t\\$':":text",  '\V\.\*\zs:s\\$':":selected",
 XSET $_selector_+=     '\V\.\*\zs[\\$':"[`attr^]`selector^",       '\V\.\*\zs>\\$':"> ",
 XSET $_selector_+=     '\V\.\*\zs+\\$':"+ ",       '\V\.\*\zs~\\$':"~ ",
-XSET $_selector_+=     '\V\.\*\zs,\\$':", ",       '\V\.\*\zs<\\$':"<`tag^`tagAttr?^></`tag^trim(V())^>",
+XSET $_selector_+=     '\V\.\*\zs,\\$':", ",       '\V\.\*\zs<\\$':"<`tag^></`tag^VMS('\\^\\w\\+')^>",
 XSET $_selector_+=})
 XSET selector.ontype=ZS($_selector_)
 XSET selector?.ontype=ZS($_selector_)
 `selector^
 
-XPT $
-XSET $_obj_=ACMB\({"\\V\\^\\zs'\\\\$":"'`selector^'",
-XSET $_obj_+=})
-XSET obj.ontype=ZS($_obj_)
+XPT $ dyn
+XSET obj.ontype=ACMB({"\\V\\^\\zs'\\$":"'`selector^'"})
 XSET selector=Trigger("selector")
-XSET method\.\..post=.ReturnIfEq("method..", Trigger("jobj"))
+XSET method\.\..post=.RIE("method..", Trigger("jobj"))
 $(`obj^)`.`method..^
 
 XPT createCustomSelector

@@ -24,8 +24,12 @@ fun! xpt#flt#Simplify(flt)
 	call filter( a:flt, 'v:val!=get(s:proto,v:key,-987654)' )
 endfunction
 fun! xpt#flt#Eval(snip,flt,closures)
+	let rctx = b:xptemplateData.renderContext
 	let snipptn = a:snip.ptn
-	let r = { 'rc' : 1, 'parseIndent' : 1, 'nav' : 'next' }
+	let r = { 'rc' : 1, 'parseIndent' : 1, 'nav' : 'stay' }
+	if has_key(rctx.snipSetting, "dyn")
+		let r.nav = "next"
+	endif
 	let rst = xpt#eval#Eval(a:flt.text,a:closures)
 	if type(rst) == type(0)
 		let r.rc = 0

@@ -16,13 +16,13 @@ XSET field|pre=field
 XSET field|def=pickL(["NULL", "NOT NULL", "SERIAL", "DEFAULT `value^","UNSIGNED","AUTO_INCREMENT"],' ','Field Properties')
 `field^
 
-XPT _mysqlfield hidden
+XPT _mysqlfield
 `field name^ `type^ `:_mysqlfprop:^
 
 XPT mysql_FieldString synonym=mysql_StringField alias=_mysqlfield
 XSET type=Embed("VARCHAR(`int str length^)")
 
-XPT mysql_FieldChar synonym=mysql_CharField alias=_mysqlfield
+XPT mysql_FieldChar synonym=mysql_CharField alias=_mysqlfield dyn
 XSET type=Embed("CHAR(`int str length^)")
 
 XPT mysql_FieldDatetime synonym=mysql_DatetimeField alias=_mysqlfield

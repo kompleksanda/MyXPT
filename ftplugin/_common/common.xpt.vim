@@ -180,6 +180,7 @@ endfunction
 
 " value matchstr
 fun! s:f.VMS( reg )
+    echom self.V() . "=====" . a:reg
     return matchstr(self.V(), a:reg)
 endfunction
 

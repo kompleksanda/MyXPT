@@ -2,6 +2,7 @@ XPTemplate priority=sub
 
 XPTinclude
 	\ c/c_library
+
 XPT header_vector "<vector> example
 //#include <vector>
 vector<string> namevec;
